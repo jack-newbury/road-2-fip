@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  --court: #2d9a62;
+  --court-deep: #1a6b45;
+  --clay: #d4b47a;
+  --clay-light: #3d3428;
+  --sand: #12140f;
+  --charcoal: #e8e4dc;
+  --ink: #d2ccc0;
+  --muted: #8a8478;
+  --line: #2a2e26;
+  --surface: #1a1d17;
+  --success: #3db878;
+  --background: #0e100c;
+  --foreground: #e8e4dc;
+  --danger: #e07070;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-court: var(--court);
+  --color-court-deep: var(--court-deep);
+  --color-clay: var(--clay);
+  --color-clay-light: var(--clay-light);
+  --color-sand: var(--sand);
+  --color-charcoal: var(--charcoal);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-syne);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-syne), system-ui, sans-serif;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fill-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.55s ease-out both;
+}
+
+.animate-fill-bar {
+  transform-origin: left;
+  animation: fill-bar 0.7s ease-out both;
+}
+
+.animate-check-pop {
+  animation: check-pop 0.35s ease-out;
+}
+
+.bg-atmosphere {
+  background:
+    radial-gradient(ellipse 90% 55% at 8% -15%, rgba(45, 154, 98, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(212, 180, 122, 0.1), transparent 50%),
+    linear-gradient(180deg, #12150f 0%, #0e100c 50%, #0b0d09 100%);
+}
+
+.hero-plane {
+  background:
+    linear-gradient(135deg, rgba(10, 40, 26, 0.98) 0%, rgba(22, 80, 52, 0.9) 42%, rgba(18, 18, 16, 0.95) 100%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
