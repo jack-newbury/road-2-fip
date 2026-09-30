@@ -83,17 +83,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-atmosphere">
-      <div className="hero-plane flex flex-1 flex-col justify-end px-6 pb-16 pt-24 md:px-12 md:pb-24">
-        <p className="font-display text-5xl font-extrabold tracking-tight text-white md:text-7xl">
+    <div className="flex min-h-dvh min-h-screen flex-col bg-atmosphere">
+      <div className="hero-plane flex flex-1 flex-col justify-end px-4 pb-12 pt-16 sm:px-6 sm:pb-16 sm:pt-24 md:px-12 md:pb-24">
+        <p className="font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-7xl">
           Road to FIP
         </p>
-        <p className="mt-4 max-w-md text-base text-white/80">
+        <p className="mt-3 max-w-md text-sm text-white/80 sm:mt-4 sm:text-base">
           Your synced padel OS — Northampton base, UK top 100 climb, first FIP
           points.
         </p>
       </div>
-      <div className="mx-auto w-full max-w-md px-6 py-10">
+      <div className="mx-auto w-full max-w-md px-4 py-8 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
         <h1 className="font-display text-2xl font-bold text-charcoal">Sign in</h1>
         <p className="mt-1 text-sm text-muted">
           Password (recommended) or magic link if email is rate-limited.

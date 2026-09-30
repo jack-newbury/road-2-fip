@@ -142,11 +142,11 @@ export default async function GymPage({
               key={s.id}
               className="flex items-start justify-between gap-3 py-3 text-sm"
             >
-              <div>
-                <p className="font-medium text-ink">
+              <div className="min-w-0">
+                <p className="break-words font-medium text-ink">
                   {formatDate(s.session_date)} · {s.duration_mins}m · {s.focus}
                 </p>
-                <p className="text-muted">
+                <p className="break-words text-muted">
                   {s.session_type || s.notes || "—"}
                 </p>
               </div>

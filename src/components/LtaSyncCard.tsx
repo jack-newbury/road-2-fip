@@ -81,7 +81,7 @@ export function LtaSyncCard({
       {okMsg ? <p className="text-sm text-success">{okMsg}</p> : null}
 
       {primary ? (
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="UK rank" value={`#${primary.rank}`} />
           <Stat label="Category" value={primary.category} />
           <Stat label="Points" value={String(primary.total_points)} />
@@ -116,9 +116,11 @@ export function LtaSyncCard({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-line bg-surface/60 px-3 py-2">
+    <div className="min-w-0 rounded-lg border border-line bg-surface/60 px-3 py-2">
       <p className="text-[10px] uppercase tracking-wider text-muted">{label}</p>
-      <p className="font-display text-lg font-semibold text-charcoal">{value}</p>
+      <p className="truncate font-display text-base font-semibold text-charcoal sm:text-lg">
+        {value}
+      </p>
     </div>
   );
 }

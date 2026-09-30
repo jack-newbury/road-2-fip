@@ -1,28 +1,13 @@
-import { ReactNode } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
+import { InfoTooltip } from "@/components/InfoTooltip";
 
-export function InfoTooltip({ text }: { text: string }) {
-  return (
-    <span
-      tabIndex={0}
-      className="group/tip relative inline-flex align-middle outline-none"
-      aria-label={text}
-    >
-      <span
-        aria-hidden
-        className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-line bg-surface text-[10px] font-bold leading-none text-muted transition group-hover/tip:border-court/50 group-hover/tip:text-court group-focus/tip:border-court/50 group-focus/tip:text-court group-focus/tip:ring-2 group-focus/tip:ring-court/40"
-      >
-        ?
-      </span>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-30 w-56 -translate-x-1/2 rounded-lg border border-line bg-ink px-2.5 py-2 text-left text-[11px] font-normal normal-case tracking-normal text-white/90 opacity-0 shadow-lg transition duration-150 group-hover/tip:opacity-100 group-focus/tip:opacity-100"
-      >
-        {text}
-        <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[5px] border-x-transparent border-t-ink" />
-      </span>
-    </span>
-  );
-}
+export { InfoTooltip };
 
 export function Field({
   label,
@@ -36,9 +21,9 @@ export function Field({
   tooltip?: string;
 }) {
   return (
-    <label className="block space-y-1.5">
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-        {label}
+    <label className="block min-w-0 space-y-1.5">
+      <span className="inline-flex max-w-full items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+        <span className="truncate">{label}</span>
         {tooltip ? <InfoTooltip text={tooltip} /> : null}
       </span>
       {children}
@@ -47,34 +32,34 @@ export function Field({
   );
 }
 
+/** text-base (≥16px) avoids iOS zoom-on-focus */
 const inputClass =
-  "w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-charcoal outline-none ring-court/30 placeholder:text-muted/70 focus:ring-2";
+  "w-full min-w-0 rounded-md border border-line bg-surface px-3 py-3 text-base text-charcoal outline-none ring-court/30 placeholder:text-muted/70 focus:ring-2 sm:py-2.5 sm:text-sm";
 
-export function TextInput(
-  props: React.InputHTMLAttributes<HTMLInputElement>,
-) {
+export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={inputClass} {...props} />;
 }
 
-export function TextSelect(
-  props: React.SelectHTMLAttributes<HTMLSelectElement>,
-) {
+export function TextSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className={inputClass} {...props} />;
 }
 
 export function TextTextarea(
-  props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  props: TextareaHTMLAttributes<HTMLTextAreaElement>,
 ) {
-  return <textarea className={`${inputClass} min-h-[88px] resize-y`} {...props} />;
+  return (
+    <textarea className={`${inputClass} min-h-[88px] resize-y`} {...props} />
+  );
 }
 
 export function PrimaryButton({
   children,
+  className = "",
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className="inline-flex items-center justify-center rounded-md bg-court px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-court-deep disabled:opacity-50"
+      className={`inline-flex min-h-11 w-full items-center justify-center rounded-md bg-court px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-court-deep disabled:opacity-50 sm:w-auto ${className}`}
       {...props}
     >
       {children}
@@ -85,10 +70,10 @@ export function PrimaryButton({
 export function DangerButton({
   children,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className="text-xs font-medium text-muted underline-offset-2 hover:text-charcoal hover:underline"
+      className="min-h-9 shrink-0 px-1 text-xs font-medium text-muted underline-offset-2 hover:text-charcoal hover:underline"
       {...props}
     >
       {children}
@@ -106,17 +91,17 @@ export function SectionCard({
   action?: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-line bg-surface/90 p-5 shadow-[0_1px_0_rgba(28,28,28,0.04)]">
+    <section className="rounded-xl border border-line bg-surface/90 p-4 shadow-[0_1px_0_rgba(28,28,28,0.04)] sm:p-5">
       {(title || action) && (
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-2 sm:gap-3">
           {title ? (
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className="min-w-0 font-display text-base font-semibold text-charcoal sm:text-lg">
               {title}
             </h2>
           ) : (
             <span />
           )}
-          {action}
+          {action ? <div className="shrink-0">{action}</div> : null}
         </div>
       )}
       {children}
@@ -132,8 +117,8 @@ export function PageHeader({
   description?: string;
 }) {
   return (
-    <header className="mb-8 animate-fade-up">
-      <h1 className="font-display text-3xl font-bold tracking-tight text-charcoal md:text-4xl">
+    <header className="mb-6 animate-fade-up sm:mb-8">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-charcoal sm:text-3xl md:text-4xl">
         {title}
       </h1>
       {description ? (

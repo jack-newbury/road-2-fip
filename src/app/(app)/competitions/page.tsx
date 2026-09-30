@@ -94,17 +94,17 @@ export default async function CompetitionsPage() {
               key={e.id}
               className="flex items-start justify-between gap-3 py-3 text-sm"
             >
-              <div>
-                <p className="font-medium text-ink">
+              <div className="min-w-0">
+                <p className="break-words font-medium text-ink">
                   {formatDate(e.event_date)} · {e.name}
                 </p>
-                <p className="text-muted">
+                <p className="break-words text-muted">
                   {LEVEL_LABELS[e.level as keyof typeof LEVEL_LABELS] ?? e.level}
                   {e.result ? ` · ${e.result}` : ""}
                   {e.partner ? ` · with ${e.partner}` : ""}
                 </p>
                 {e.ranking_notes ? (
-                  <p className="mt-1 text-xs text-court-deep">
+                  <p className="mt-1 break-words text-xs text-court-deep">
                     {e.ranking_notes}
                   </p>
                 ) : null}

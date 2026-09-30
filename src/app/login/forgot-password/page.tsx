@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-atmosphere px-6 py-16">
+    <div className="min-h-dvh min-h-screen bg-atmosphere px-4 py-12 pb-[max(3rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-16">
       <div className="mx-auto max-w-md">
         <Link href="/login" className="text-sm text-court hover:underline">
           ← Back to sign in

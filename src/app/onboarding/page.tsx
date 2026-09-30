@@ -29,7 +29,7 @@ export default async function OnboardingPage() {
   const goal = defaultGoalDate(3);
 
   return (
-    <div className="min-h-screen bg-atmosphere px-4 py-12">
+    <div className="min-h-dvh min-h-screen bg-atmosphere px-4 py-12 sm:px-4 sm:py-12">
       <div className="mx-auto max-w-lg">
         <p className="font-display text-sm font-semibold uppercase tracking-widest text-court">
           Road to FIP
@@ -81,7 +81,7 @@ export default async function OnboardingPage() {
               defaultValue={goal}
             />
           </Field>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Court / wk">
               <TextInput
                 name="target_court"

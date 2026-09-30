@@ -9,7 +9,7 @@ import type {
 } from "@/lib/types";
 import { PHASE_META, STATUS_LABELS } from "@/lib/types";
 import { phaseProgress } from "@/lib/utils";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 const CATEGORY_ORDER: SkillCategory[] = [
   "technique",
@@ -55,7 +55,7 @@ function Milestone({
   return (
     <div className="relative z-10 mx-auto w-full max-w-md">
       <div
-        className={`rounded-xl border px-5 py-4 text-center ${
+        className={`rounded-xl border px-4 py-3.5 text-center sm:px-5 sm:py-4 ${
           active
             ? "border-court bg-court/20 shadow-[0_0_40px_rgba(45,154,98,0.15)]"
             : "border-line bg-surface"
@@ -65,7 +65,7 @@ function Milestone({
           Tier {phase}
           {active ? " · current" : ""}
         </p>
-        <h2 className="mt-1 font-display text-xl font-bold text-charcoal md:text-2xl">
+        <h2 className="mt-1 font-display text-lg font-bold text-charcoal sm:text-xl md:text-2xl">
           {meta.title}
         </h2>
         <p className="mt-1 text-xs text-muted">
@@ -125,18 +125,22 @@ function DetailPanel({
   skill,
   progress,
   onClose,
+  className = "",
 }: {
   skill: RoadmapSkill;
   progress?: SkillProgress;
   onClose: () => void;
+  className?: string;
 }) {
   const [pending, start] = useTransition();
   const status = progress?.status ?? "todo";
 
   return (
-    <div className="sticky top-4 rounded-xl border border-court/30 bg-surface p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] animate-fade-up">
+    <div
+      className={`rounded-xl border border-court/30 bg-surface p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)] animate-fade-up sm:p-5 ${className}`}
+    >
       <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-clay">
             {CATEGORY_LABELS[skill.category]} · Tier {skill.phase}
           </p>
@@ -147,7 +151,7 @@ function DetailPanel({
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-muted hover:text-charcoal"
+          className="min-h-9 shrink-0 rounded-md px-2 text-sm text-muted hover:text-charcoal"
         >
           Close
         </button>
@@ -175,7 +179,7 @@ function DetailPanel({
               );
             });
           }}
-          className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm text-ink outline-none ring-court/30 focus:ring-2"
+          className="w-full min-h-11 rounded-md border border-line bg-background px-3 py-2.5 text-base text-ink outline-none ring-court/30 focus:ring-2 sm:min-h-0 sm:py-2 sm:text-sm"
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -204,12 +208,21 @@ export function RoadmapBoard({
   );
   const selected = skills.find((s) => s.id === selectedId) ?? null;
 
+  useEffect(() => {
+    if (!selected) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [selected]);
+
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
       <div className="relative space-y-0 pb-8">
         <Spine />
 
-        <div className="mb-8 flex flex-wrap items-center justify-center gap-3 text-[10px] uppercase tracking-wide text-muted">
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase tracking-wide text-muted sm:gap-3">
           {(
             [
               ["todo", "To do"],
@@ -302,6 +315,7 @@ export function RoadmapBoard({
       <aside className="hidden lg:block">
         {selected ? (
           <DetailPanel
+            className="sticky top-4"
             skill={selected}
             progress={progressMap.get(selected.id)}
             onClose={() => setSelectedId(null)}
@@ -324,12 +338,27 @@ export function RoadmapBoard({
       </aside>
 
       {selected ? (
-        <div className="fixed inset-x-0 bottom-16 z-40 border-t border-line bg-surface p-4 lg:hidden">
-          <DetailPanel
-            skill={selected}
-            progress={progressMap.get(selected.id)}
-            onClose={() => setSelectedId(null)}
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          role="dialog"
+          aria-modal
+        >
+          <button
+            type="button"
+            aria-label="Close skill detail"
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setSelectedId(null)}
           />
+          <div
+            className="absolute inset-x-0 bottom-0 max-h-[70dvh] overflow-y-auto rounded-t-2xl border border-line bg-surface p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom))] shadow-2xl"
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
+            <DetailPanel
+              skill={selected}
+              progress={progressMap.get(selected.id)}
+              onClose={() => setSelectedId(null)}
+            />
+          </div>
         </div>
       ) : null}
     </div>

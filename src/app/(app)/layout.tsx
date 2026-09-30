@@ -32,10 +32,10 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh min-h-screen">
       <AppNav />
-      <main className="flex-1 pb-24 lg:pb-10">
-        <div className="mx-auto max-w-5xl px-4 pt-6 lg:px-8 lg:pt-10">
+      <main className="min-w-0 flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
+        <div className="mx-auto w-full max-w-5xl px-3 pt-5 sm:px-4 sm:pt-6 lg:px-8 lg:pt-10">
           {children}
         </div>
       </main>

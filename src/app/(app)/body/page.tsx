@@ -241,14 +241,14 @@ export default async function BodyPage() {
               key={m.id}
               className="flex items-start justify-between gap-3 py-3"
             >
-              <div>
-                <p className="font-medium text-ink">
+              <div className="min-w-0">
+                <p className="break-words font-medium text-ink">
                   {formatDate(m.log_date)} · {Number(m.weight_kg).toFixed(1)} kg
                   {m.body_fat_pct != null
                     ? ` · ${Number(m.body_fat_pct).toFixed(1)}% BF`
                     : ""}
                 </p>
-                <p className="text-muted">
+                <p className="break-words text-muted">
                   {[
                     m.waist_cm != null && `Waist ${m.waist_cm}`,
                     m.chest_cm != null && `Chest ${m.chest_cm}`,

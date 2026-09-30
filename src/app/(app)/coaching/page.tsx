@@ -89,17 +89,21 @@ export default async function CoachingPage() {
               key={s.id}
               className="flex items-start justify-between gap-3 py-3 text-sm"
             >
-              <div>
-                <p className="font-medium text-ink">
+              <div className="min-w-0">
+                <p className="break-words font-medium text-ink">
                   {formatDate(s.session_date)} · {s.duration_mins}m
                   {s.coach_name ? ` · ${s.coach_name}` : ""}
                 </p>
-                {s.focus ? <p className="text-muted">{s.focus}</p> : null}
+                {s.focus ? (
+                  <p className="break-words text-muted">{s.focus}</p>
+                ) : null}
                 {s.takeaways ? (
-                  <p className="mt-1 text-xs text-muted">{s.takeaways}</p>
+                  <p className="mt-1 break-words text-xs text-muted">
+                    {s.takeaways}
+                  </p>
                 ) : null}
                 {s.homework ? (
-                  <p className="mt-1 text-xs text-court-deep">
+                  <p className="mt-1 break-words text-xs text-court-deep">
                     Homework: {s.homework}
                   </p>
                 ) : null}

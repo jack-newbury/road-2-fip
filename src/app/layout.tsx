@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Syne } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   title: "Road to FIP",
   description:
     "Track padel progress toward FIP points and UK top 100 — from Northampton.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

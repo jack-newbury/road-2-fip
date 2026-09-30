@@ -114,7 +114,7 @@ export default async function KourtosPage() {
             return (
               <li key={m.id} className="py-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-medium text-charcoal">
+                <p className="break-words font-medium text-charcoal">
                     {formatDate(m.started_at.slice(0, 10))} ·{" "}
                     {m.activity_type}
                     {m.venue_name ? ` · ${m.venue_name}` : ""}
@@ -131,7 +131,7 @@ export default async function KourtosPage() {
                     {resultLabel(m.won)}
                   </span>
                 </div>
-                <p className="mt-1 text-muted">
+                <p className="mt-1 break-words text-muted">
                   {team1.map(playerLabel).join(" / ") || "Team 1"}
                   {" vs "}
                   {team2.map(playerLabel).join(" / ") || "Team 2"}

@@ -92,27 +92,27 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="hero-plane animate-fade-up relative overflow-hidden rounded-2xl px-6 py-10 text-white md:px-10 md:py-14">
-        <p className="font-display text-4xl font-extrabold tracking-tight md:text-5xl">
+      <section className="hero-plane animate-fade-up relative overflow-hidden rounded-2xl px-4 py-8 text-white sm:px-6 sm:py-10 md:px-10 md:py-14">
+        <p className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
           Road to FIP
         </p>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-white/80 md:text-base">
           {p.display_name} · {p.home_base}. Build the UK ladder, then take the
           FIP points.
         </p>
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           <DualGoalStrip profile={p} />
         </div>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-2 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3">
           <Link
             href="/practice"
-            className="rounded-md bg-clay px-4 py-2.5 text-sm font-semibold text-[#1c1c1c] transition hover:brightness-110"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-clay px-4 py-2.5 text-center text-sm font-semibold text-[#1c1c1c] transition hover:brightness-110"
           >
             Log today’s session
           </Link>
           <Link
             href="/roadmap"
-            className="rounded-md border border-white/30 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-white/30 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/10"
           >
             View roadmap
           </Link>
@@ -204,9 +204,9 @@ export default async function DashboardPage() {
           {(recentPractice || []).map((s) => (
             <li
               key={s.id}
-              className="flex justify-between gap-3 border-b border-line pb-3 last:border-0"
+              className="flex flex-col gap-1 border-b border-line pb-3 last:border-0 sm:flex-row sm:justify-between sm:gap-3"
             >
-              <span>
+              <span className="min-w-0 break-words">
                 Court · {s.session_type} · {s.duration_mins}m
                 {s.focus ? ` · ${s.focus}` : ""}
               </span>
@@ -218,9 +218,9 @@ export default async function DashboardPage() {
           {(recentComps || []).map((c) => (
             <li
               key={c.id}
-              className="flex justify-between gap-3 border-b border-line pb-3 last:border-0"
+              className="flex flex-col gap-1 border-b border-line pb-3 last:border-0 sm:flex-row sm:justify-between sm:gap-3"
             >
-              <span>
+              <span className="min-w-0 break-words">
                 Comp · {c.name} ({c.level})
                 {c.result ? ` · ${c.result}` : ""}
               </span>
