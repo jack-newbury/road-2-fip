@@ -60,3 +60,27 @@ export const BODY_GOAL_LABELS: Record<BodyGoal, string> = {
   maintain: "Maintain",
   gain: "Gain (lean mass)",
 };
+
+/** Short explanations for body UI tooltips */
+export const BODY_FIELD_HELP = {
+  weight:
+    "Total body mass in kg. Weigh at a consistent time (ideally morning, fasted, same scales) so trends are meaningful for meal prep and gym loading.",
+  body_fat:
+    "Estimated fat mass as a % of body weight (smart scales, DEXA, or callipers). Used with weight to estimate lean mass and set protein targets.",
+  waist:
+    "Circumference at the navel (or narrowest point). A useful proxy for abdominal fat — track the trend, not day-to-day noise.",
+  chest:
+    "Circumference around the fullest part of the chest (nipple line). Helps track upper-body size alongside weight.",
+  hips:
+    "Circumference at the widest point of the hips/glutes. Often paired with waist to watch shape change over time.",
+  height:
+    "Standing height without shoes. Used for calorie estimates and context with weight when body fat isn’t logged.",
+  sex: "Only used for rough calorie / lean-mass estimates when body fat % isn’t available. Optional.",
+  body_goal:
+    "How meal prep and gym bias calories and protein: lose fat (slight deficit, high protein), recomp (near maintenance), maintain, or gain lean mass (surplus).",
+  date: "The day this check-in applies to. Use the morning you weighed for consistency.",
+  notes:
+    "Anything that affects the reading — fasted vs fed, travel, illness, different scales, or DEXA day.",
+  goal_card:
+    "Your composition target. Meal prep calories/protein and gym plans lean on this setting.",
+} as const;

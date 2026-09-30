@@ -5,10 +5,11 @@ import {
 } from "@/lib/actions";
 import { metricTrend } from "@/lib/body/coaching";
 import type { BodyMetric } from "@/lib/body/types";
-import { BODY_GOAL_LABELS } from "@/lib/body/types";
+import { BODY_FIELD_HELP, BODY_GOAL_LABELS } from "@/lib/body/types";
 import {
   DangerButton,
   Field,
+  InfoTooltip,
   PageHeader,
   PrimaryButton,
   SectionCard,
@@ -53,7 +54,10 @@ export default async function BodyPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-line bg-surface px-4 py-4">
-          <p className="text-[10px] uppercase tracking-wider text-muted">Weight</p>
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted">
+            Weight
+            <InfoTooltip text={BODY_FIELD_HELP.weight} />
+          </p>
           <p className="font-display text-2xl font-bold text-charcoal">
             {latest ? `${Number(latest.weight_kg).toFixed(1)} kg` : "—"}
           </p>
@@ -65,8 +69,9 @@ export default async function BodyPage() {
           ) : null}
         </div>
         <div className="rounded-xl border border-line bg-surface px-4 py-4">
-          <p className="text-[10px] uppercase tracking-wider text-muted">
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted">
             Body fat
+            <InfoTooltip text={BODY_FIELD_HELP.body_fat} />
           </p>
           <p className="font-display text-2xl font-bold text-clay">
             {latest?.body_fat_pct != null
@@ -81,7 +86,10 @@ export default async function BodyPage() {
           ) : null}
         </div>
         <div className="rounded-xl border border-line bg-surface px-4 py-4">
-          <p className="text-[10px] uppercase tracking-wider text-muted">Goal</p>
+          <p className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted">
+            Goal
+            <InfoTooltip text={BODY_FIELD_HELP.goal_card} />
+          </p>
           <p className="font-display text-lg font-bold text-charcoal">
             {BODY_GOAL_LABELS[p.body_goal ?? "recomp"]}
           </p>
@@ -96,7 +104,7 @@ export default async function BodyPage() {
 
       <SectionCard title="Log check-in">
         <form action={upsertBodyMetric} className="grid gap-4 sm:grid-cols-2">
-          <Field label="Date">
+          <Field label="Date" tooltip={BODY_FIELD_HELP.date}>
             <TextInput
               name="log_date"
               type="date"
@@ -104,7 +112,7 @@ export default async function BodyPage() {
               defaultValue={todayISO()}
             />
           </Field>
-          <Field label="Weight (kg)">
+          <Field label="Weight (kg)" tooltip={BODY_FIELD_HELP.weight}>
             <TextInput
               name="weight_kg"
               type="number"
@@ -115,7 +123,7 @@ export default async function BodyPage() {
               defaultValue={latest?.weight_kg ?? ""}
             />
           </Field>
-          <Field label="Body fat %">
+          <Field label="Body fat %" tooltip={BODY_FIELD_HELP.body_fat}>
             <TextInput
               name="body_fat_pct"
               type="number"
@@ -126,7 +134,7 @@ export default async function BodyPage() {
               placeholder="scales / DEXA / callipers"
             />
           </Field>
-          <Field label="Waist (cm)">
+          <Field label="Waist (cm)" tooltip={BODY_FIELD_HELP.waist}>
             <TextInput
               name="waist_cm"
               type="number"
@@ -134,7 +142,7 @@ export default async function BodyPage() {
               defaultValue={latest?.waist_cm ?? ""}
             />
           </Field>
-          <Field label="Chest (cm)">
+          <Field label="Chest (cm)" tooltip={BODY_FIELD_HELP.chest}>
             <TextInput
               name="chest_cm"
               type="number"
@@ -142,7 +150,7 @@ export default async function BodyPage() {
               defaultValue={latest?.chest_cm ?? ""}
             />
           </Field>
-          <Field label="Hips (cm)">
+          <Field label="Hips (cm)" tooltip={BODY_FIELD_HELP.hips}>
             <TextInput
               name="hips_cm"
               type="number"
@@ -151,7 +159,7 @@ export default async function BodyPage() {
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Notes">
+            <Field label="Notes" tooltip={BODY_FIELD_HELP.notes}>
               <TextTextarea
                 name="notes"
                 placeholder="Morning fasted, same scales, etc."
@@ -191,7 +199,7 @@ export default async function BodyPage() {
             name="target_coaching"
             value={p.weekly_targets.coaching}
           />
-          <Field label="Height (cm)">
+          <Field label="Height (cm)" tooltip={BODY_FIELD_HELP.height}>
             <TextInput
               name="height_cm"
               type="number"
@@ -199,7 +207,7 @@ export default async function BodyPage() {
               defaultValue={p.height_cm ?? ""}
             />
           </Field>
-          <Field label="Sex (for estimates)">
+          <Field label="Sex (for estimates)" tooltip={BODY_FIELD_HELP.sex}>
             <TextSelect name="sex" defaultValue={p.sex ?? ""}>
               <option value="">Prefer not to say</option>
               <option value="male">Male</option>
@@ -208,7 +216,10 @@ export default async function BodyPage() {
             </TextSelect>
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Body composition goal">
+            <Field
+              label="Body composition goal"
+              tooltip={BODY_FIELD_HELP.body_goal}
+            >
               <TextSelect name="body_goal" defaultValue={p.body_goal ?? "recomp"}>
                 <option value="lose_fat">Lose fat (keep power)</option>
                 <option value="recomp">Recomp</option>

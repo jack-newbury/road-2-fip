@@ -1,18 +1,45 @@
 import { ReactNode } from "react";
 
+export function InfoTooltip({ text }: { text: string }) {
+  return (
+    <span
+      tabIndex={0}
+      className="group/tip relative inline-flex align-middle outline-none"
+      aria-label={text}
+    >
+      <span
+        aria-hidden
+        className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-line bg-surface text-[10px] font-bold leading-none text-muted transition group-hover/tip:border-court/50 group-hover/tip:text-court group-focus/tip:border-court/50 group-focus/tip:text-court group-focus/tip:ring-2 group-focus/tip:ring-court/40"
+      >
+        ?
+      </span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-30 w-56 -translate-x-1/2 rounded-lg border border-line bg-ink px-2.5 py-2 text-left text-[11px] font-normal normal-case tracking-normal text-white/90 opacity-0 shadow-lg transition duration-150 group-hover/tip:opacity-100 group-focus/tip:opacity-100"
+      >
+        {text}
+        <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[5px] border-x-transparent border-t-ink" />
+      </span>
+    </span>
+  );
+}
+
 export function Field({
   label,
   children,
   hint,
+  tooltip,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
+  tooltip?: string;
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
         {label}
+        {tooltip ? <InfoTooltip text={tooltip} /> : null}
       </span>
       {children}
       {hint ? <span className="block text-xs text-muted">{hint}</span> : null}
