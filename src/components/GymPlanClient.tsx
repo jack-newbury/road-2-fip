@@ -18,12 +18,12 @@ import { useState, useTransition } from "react";
 export function GymPlanClient({
   weekStart,
   plan,
-  hasOpenAI,
+  hasClaude,
   bodyHint,
 }: {
   weekStart: string;
   plan: GymPlanRow | null;
-  hasOpenAI: boolean;
+  hasClaude: boolean;
   bodyHint: string | null;
 }) {
   const router = useRouter();
@@ -34,9 +34,9 @@ export function GymPlanClient({
     <div className="space-y-6">
       <SectionCard title="This week’s padel gym plan">
         <p className="mb-4 text-sm text-muted">
-          {hasOpenAI
+          {hasClaude
             ? "Built from your phase, recovery, upcoming comps, and body metrics — court transfer first."
-            : "Template padel S&C (add OPENAI_API_KEY for a custom week)."}
+            : "Template padel S&C (add ANTHROPIC_API_KEY for a custom week)."}
           {bodyHint ? (
             <>
               {" "}

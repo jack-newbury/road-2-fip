@@ -19,11 +19,11 @@ import type {
   MealPlanContent,
   MealPlanPreferences,
 } from "@/lib/meal-prep/types";
+import { claudeJson, claudeText, isClaudeConfigured } from "@/lib/ai/claude";
 import { createClient } from "@/lib/supabase/server";
 import { currentPhase } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import OpenAI from "openai";
 import type {
   CompetitionLevel,
   GymFocus,
@@ -361,11 +361,11 @@ export async function generateRecap(period: RecapPeriod): Promise<{
   content?: string;
   id?: string;
 }> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isClaudeConfigured()) {
     return {
       ok: false,
       error:
-        "Add OPENAI_API_KEY to .env.local and restart the server to enable AI recaps.",
+        "Add ANTHROPIC_API_KEY to .env.local and restart the server to enable AI recaps.",
     };
   }
 
@@ -373,20 +373,11 @@ export async function generateRecap(period: RecapPeriod): Promise<{
   const snapshot = await buildProgressSnapshot(supabase, user.id, period);
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    const content = await claudeText({
+      system: buildRecapSystemPrompt(),
+      user: `Generate a ${snapshot.label.toLowerCase()} recap for this athlete using only this data:\n\n${JSON.stringify(snapshot, null, 2)}`,
       temperature: 0.6,
-      messages: [
-        { role: "system", content: buildRecapSystemPrompt() },
-        {
-          role: "user",
-          content: `Generate a ${snapshot.label.toLowerCase()} recap for this athlete using only this data:\n\n${JSON.stringify(snapshot, null, 2)}`,
-        },
-      ],
     });
-
-    const content = completion.choices[0]?.message?.content?.trim();
     if (!content) {
       return { ok: false, error: "The AI returned an empty recap. Try again." };
     }
@@ -441,29 +432,19 @@ async function generatePlanContent(
   prefs: MealPlanPreferences,
   context: unknown,
 ): Promise<MealPlanContent> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isClaudeConfigured()) {
     return buildTemplatePlan(weekStart, prefs);
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const completion = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+  const raw = await claudeJson({
+    system: mealPrepSystemPrompt(),
+    user: JSON.stringify({
+      week_start: weekStart,
+      preferences: prefs,
+      context,
+    }),
     temperature: 0.5,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: mealPrepSystemPrompt() },
-      {
-        role: "user",
-        content: JSON.stringify({
-          week_start: weekStart,
-          preferences: prefs,
-          context,
-        }),
-      },
-    ],
   });
-
-  const raw = completion.choices[0]?.message?.content?.trim();
   if (!raw) return buildTemplatePlan(weekStart, prefs);
 
   try {
@@ -716,25 +697,15 @@ async function generateGymWeekContent(
   context: unknown,
   priority: string,
 ): Promise<GymWeekPlan> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isClaudeConfigured()) {
     return buildTemplateGymPlan(weekStart, priority);
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const completion = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+  const raw = await claudeJson({
+    system: gymPlanSystemPrompt(),
+    user: JSON.stringify({ week_start: weekStart, context }),
     temperature: 0.55,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: gymPlanSystemPrompt() },
-      {
-        role: "user",
-        content: JSON.stringify({ week_start: weekStart, context }),
-      },
-    ],
   });
-
-  const raw = completion.choices[0]?.message?.content?.trim();
   if (!raw) return buildTemplateGymPlan(weekStart, priority);
 
   try {

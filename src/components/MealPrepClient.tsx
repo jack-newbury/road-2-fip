@@ -22,12 +22,12 @@ import { useRouter } from "next/navigation";
 export function MealPrepClient({
   weekStart,
   plan,
-  hasOpenAI,
+  hasClaude,
   defaultPrefs,
 }: {
   weekStart: string;
   plan: MealPlanRow | null;
-  hasOpenAI: boolean;
+  hasClaude: boolean;
   defaultPrefs?: ReturnType<typeof defaultPreferences>;
 }) {
   const router = useRouter();
@@ -86,9 +86,9 @@ export function MealPrepClient({
     <div className="space-y-8">
       <SectionCard title="Build this week’s plan">
         <p className="mb-4 text-sm text-muted">
-          {hasOpenAI
+          {hasClaude
             ? "AI builds a padel-fuelled week with shopping list + Sunday prep."
-            : "Template plan (add OPENAI_API_KEY for a custom AI plan)."}
+            : "Template plan (add ANTHROPIC_API_KEY for a custom AI plan)."}
         </p>
         <form
           onSubmit={(e) => {

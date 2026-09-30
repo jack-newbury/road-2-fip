@@ -87,7 +87,7 @@ export default async function MealPrepPage({
       <MealPrepClient
         weekStart={weekStart}
         plan={(data as MealPlanRow | null) ?? null}
-        hasOpenAI={Boolean(process.env.OPENAI_API_KEY)}
+        hasClaude={Boolean(process.env.ANTHROPIC_API_KEY)}
         defaultPrefs={defaults}
       />
     </div>

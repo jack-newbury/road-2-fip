@@ -18,7 +18,7 @@ export default async function RecapsPage() {
     .order("created_at", { ascending: false })
     .limit(20);
 
-  const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+  const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
   return (
     <div className="space-y-8">

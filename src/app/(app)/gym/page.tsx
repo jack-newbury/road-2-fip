@@ -75,7 +75,7 @@ export default async function GymPage({
       <GymPlanClient
         weekStart={weekStart}
         plan={(plan as GymPlanRow | null) ?? null}
-        hasOpenAI={Boolean(process.env.OPENAI_API_KEY)}
+        hasClaude={Boolean(process.env.ANTHROPIC_API_KEY)}
         bodyHint={bodyHint}
       />
 

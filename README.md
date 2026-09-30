@@ -21,7 +21,7 @@ Personal padel training OS for a dual goal: **first FIP points** (primary) and *
 4. Add redirect URLs: `http://localhost:3000/auth/callback` and your production URL (same path). For password reset, the app uses `/auth/callback?next=/auth/update-password`.
 5. Copy `.env.example` → `.env.local` and fill in:
    - Supabase URL + anon key
-   - `OPENAI_API_KEY` for AI recaps
+   - `ANTHROPIC_API_KEY` for AI recaps / meal prep / gym plans (from [console.anthropic.com](https://console.anthropic.com) — Claude Pro chat subscription is separate from API)
    - **Kourtos partner token (recommended):** `KOURTOS_PARTNER_API_TOKEN=kos_live_…` from the Kourtos `/partner` portal, plus `KOURTOS_PLAYER_NAME` (exact name on fixtures) or `KOURTOS_PLAYER_ID`
    - Optional user email/password (or JWT) only if you also want Playtomic level enrichment from `/stats/overview`
 6. Install and run:
@@ -38,7 +38,7 @@ Open [http://localhost:3000](http://localhost:3000). Without env vars you’ll s
 - Dashboard with dual-goal strip and weekly checklist
 - Guided 3-phase roadmap (foundations → UK ladder → top 100 + FIP)
 - Logs: practice, competitions, coaching, gym, recovery, nutrition
-- **AI coach**: weekly/monthly recaps with progress notes and tips (OpenAI)
+- **AI coach**: weekly/monthly recaps with progress notes and tips (Claude)
 - **Kourtos sync**: Playtomic level, win rate, and recent games from app.kourtos.com
 - **Meal prep**: weekly plan tailored to weight/BF% + body goal; supermarket order list
 - **Body**: weight, body fat %, measurements, composition goal
