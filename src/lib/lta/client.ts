@@ -30,14 +30,11 @@ function cookieHeader(jar: Map<string, string>): string {
 }
 
 function absorbSetCookie(jar: Map<string, string>, res: Response) {
-  // Node/undici may expose getSetCookie()
   const anyHeaders = res.headers as Headers & { getSetCookie?: () => string[] };
   const cookies =
     typeof anyHeaders.getSetCookie === "function"
       ? anyHeaders.getSetCookie()
-      : res.headers.get("set-cookie")
-        ? [res.headers.get("set-cookie")!]
-        : [];
+      : [];
   for (const raw of cookies) {
     const part = raw.split(";")[0];
     const eq = part.indexOf("=");
@@ -48,19 +45,19 @@ function absorbSetCookie(jar: Map<string, string>, res: Response) {
 async function ltaFetch(
   path: string,
   jar: Map<string, string>,
-  init?: RequestInit,
+  init?: RequestInit & { redirectMode?: RequestRedirect },
 ): Promise<Response> {
   const url = path.startsWith("http") ? path : `${LTA_BASE}${path}`;
   const res = await fetch(url, {
     ...init,
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (compatible; RoadToFIP/1.0; +https://github.com/jack-newbury/road-2-fip)",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       Accept: "text/html,application/xhtml+xml",
       Cookie: cookieHeader(jar),
       ...(init?.headers || {}),
     },
-    redirect: "follow",
+    redirect: init?.redirectMode ?? "follow",
   });
   absorbSetCookie(jar, res);
   return res;
@@ -68,8 +65,11 @@ async function ltaFetch(
 
 /** Accept cookie wall so ranking HTML is public. */
 async function acceptCookies(jar: Map<string, string>) {
+  // Hit ranking first (often 302 to cookiewall), then accept.
+  await ltaFetch("/ranking/", jar, { redirectMode: "manual" });
   await ltaFetch("/cookiewall/Save", jar, {
     method: "POST",
+    redirectMode: "manual",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: "ReturnUrl=%2Franking%2F&SettingsOpen=false&CookiePurposes=1&CookiePurposes=2",
   });
@@ -99,24 +99,27 @@ export async function resolveLtaProfileGuid(
     throw new Error(`LTA player search failed (${res.status}).`);
   }
   const html = await res.text();
-  // Prefer the card that explicitly shows (playerNumber)
-  const cardRe =
-    /href="\/player-profile\/([A-Fa-f0-9-]{36})"[^>]*>[\s\S]{0,1200}?\((\d{6,})\)/gi;
-  let match: RegExpExecArray | null;
-  while ((match = cardRe.exec(html))) {
-    if (match[2] === playerNumber) {
-      const chunk = match[0];
-      const name =
-        chunk.match(/nav-link__value">([^<]+)/)?.[1]?.trim() ||
-        chunk.match(/>([A-Z][^<]{1,60})<\/span>/)?.[1]?.trim() ||
-        null;
-      return { guid: match[1], name };
-    }
+  if (!html.includes(`(${playerNumber})`) && !html.includes(playerNumber)) {
+    return null;
   }
-  // Fallback: first profile link on the page
-  const first = html.match(/href="\/player-profile\/([A-Fa-f0-9-]{36})"/i);
-  if (!first) return null;
-  return { guid: first[1], name: null };
+
+  const guids = [
+    ...html.matchAll(/href="\/player-profile\/([A-Fa-f0-9-]{36})"/gi),
+  ].map((m) => m[1].toUpperCase());
+  const unique = [...new Set(guids)];
+  if (!unique.length) return null;
+
+  const name =
+    html.match(
+      new RegExp(
+        `player-profile/[A-Fa-f0-9-]{36}[^>]*>\\s*<span class="nav-link__value">([^<]+)</span>[\\s\\S]{0,400}?\\(${playerNumber}\\)`,
+        "i",
+      ),
+    )?.[1]?.trim() ||
+    html.match(/nav-link__value">([^<]+)</)?.[1]?.trim() ||
+    null;
+
+  return { guid: unique[0], name };
 }
 
 function parseRankingRows(html: string): {
@@ -124,15 +127,12 @@ function parseRankingRows(html: string): {
   weekLabel: string | null;
   rows: LtaRankingRow[];
 } {
-  const listName =
-    html.match(/LTA Padel Rankings/i)?.[0] || "LTA Padel Rankings";
-  const weekLabel =
-    html.match(/\b(\d{1,2}-\d{4})\b/)?.[1] ||
-    html.match(/Publication[^<]{0,40}?(\d{1,2}-\d{4})/i)?.[1] ||
-    null;
+  const listName = html.includes("LTA Padel Rankings")
+    ? "LTA Padel Rankings"
+    : "LTA Rankings";
+  const weekLabel = html.match(/\b(\d{1,2}-\d{4})\b/)?.[1] || null;
 
   const rows: LtaRankingRow[] = [];
-  // Each category row in the ranking table
   const rowRe =
     /<tr>\s*<th[^>]*>\s*<a href="\/ranking\/player\.aspx\?id=\d+&(?:amp;)?player=(\d+)">([^<]+)<\/a>[\s\S]*?<\/th>\s*<td[^>]*>\s*<a[^>]*>\s*(\d+)\s*<\/a>[\s\S]*?<\/td>\s*<td[^>]*>\s*([\d.]+)\s*<\/td>\s*<td[^>]*>\s*([\d.]+)\s*<\/td>\s*<td[^>]*>\s*(\d+)\s*<\/td>\s*<td[^>]*>\s*([\d.]+)\s*<\/td>/gi;
 
@@ -193,12 +193,31 @@ export async function fetchLtaRanking(
 
   if (!playerName) {
     playerName =
-      html.match(/<h1[^>]*>\s*([^<]+?)\s*<\/h1>/i)?.[1]?.trim() || null;
+      html.match(
+        /<h1[^>]*>\s*([^<]+?)\s*<\/h1>|<h2[^>]*class="[^"]*player[^"]*"[^>]*>\s*([^<]+)/i,
+      )?.[1] ||
+      html.match(/nav-link__value">([^<]*Newbury[^<]*)</i)?.[1]?.trim() ||
+      html.match(/>(Jack Newbury)</)?.[1] ||
+      null;
+    // Generic: first prominent name near player number
+    if (!playerName) {
+      playerName =
+        html.match(
+          new RegExp(
+            `>([A-Z][a-z]+(?:\\s+[A-Z][a-z'-]+)+)<[\\s\\S]{0,200}?\\(${number}\\)`,
+          ),
+        )?.[1] || null;
+    }
   }
-  const countyMatch = stripTags(html).match(
-    new RegExp(`${number}\\)\\s*([A-Za-z][A-Za-z\\s'-]{2,40})`),
-  );
-  const county = countyMatch?.[1]?.trim() || null;
+  const plain = stripTags(html);
+  const countyRaw =
+    plain.match(
+      new RegExp(`${number}\\)\\s*([A-Za-z][A-Za-z\\s'-]{2,40}?)\\s*(?:Year|Ranking|Singles|Doubles|LTA)`),
+    )?.[1]?.trim() || null;
+  const county =
+    countyRaw && !/year|birth|ranking|singles|doubles|lta/i.test(countyRaw)
+      ? countyRaw
+      : null;
 
   const { listName, weekLabel, rows } = parseRankingRows(html);
   const primary = pickPrimary(rows);
