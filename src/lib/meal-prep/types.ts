@@ -9,6 +9,8 @@ export type PlannedMeal = {
   slot: MealSlot | string;
   name: string;
   notes: string;
+  /** Suggested clock time, e.g. "07:30" or "18:00" (24h UK). */
+  eat_time?: string | null;
   prep_batch?: string | null;
 };
 
@@ -72,6 +74,28 @@ export const SLOT_LABELS: Record<string, string> = {
   snack_pre: "Pre-court",
   snack_post: "Post-court",
 };
+
+/** Fallback suggested eat times (24h) when AI/template omits them. */
+export function defaultEatTime(
+  slot: string,
+  opts?: { courtEvening?: boolean },
+): string {
+  const courtEvening = opts?.courtEvening ?? false;
+  switch (slot) {
+    case "breakfast":
+      return "07:30";
+    case "lunch":
+      return "12:30";
+    case "dinner":
+      return courtEvening ? "20:15" : "19:00";
+    case "snack_pre":
+      return courtEvening ? "17:30" : "16:00";
+    case "snack_post":
+      return courtEvening ? "21:00" : "18:30";
+    default:
+      return "12:00";
+  }
+}
 
 export function localISODate(d: Date): string {
   const y = d.getFullYear();

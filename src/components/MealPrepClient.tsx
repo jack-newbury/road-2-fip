@@ -6,7 +6,7 @@ import {
   toggleShoppingItem,
 } from "@/lib/actions";
 import type { MealPlanRow } from "@/lib/meal-prep/types";
-import { SLOT_LABELS } from "@/lib/meal-prep/types";
+import { SLOT_LABELS, defaultEatTime } from "@/lib/meal-prep/types";
 import { defaultPreferences } from "@/lib/meal-prep/plan";
 import {
   Field,
@@ -359,20 +359,32 @@ export function MealPrepClient({
                     <p className="mb-2 text-xs text-court">{day.training_note}</p>
                   ) : null}
                   <ul className="space-y-2">
-                    {(day.meals || []).map((meal, idx) => (
-                      <li key={`${day.date}-${idx}`} className="text-sm">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-clay">
-                          {SLOT_LABELS[meal.slot] || meal.slot}
-                        </span>
-                        <p className="font-medium text-ink">{meal.name}</p>
-                        <p className="text-xs text-muted">{meal.notes}</p>
-                        {meal.prep_batch ? (
-                          <p className="text-xs text-court">
-                            From prep: {meal.prep_batch}
-                          </p>
-                        ) : null}
-                      </li>
-                    ))}
+                    {(day.meals || []).map((meal, idx) => {
+                      const time =
+                        meal.eat_time ||
+                        defaultEatTime(meal.slot, {
+                          courtEvening: Boolean(day.training_note),
+                        });
+                      return (
+                        <li key={`${day.date}-${idx}`} className="text-sm">
+                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span className="font-mono text-[11px] font-semibold tabular-nums text-court">
+                              {time}
+                            </span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-clay">
+                              {SLOT_LABELS[meal.slot] || meal.slot}
+                            </span>
+                          </div>
+                          <p className="font-medium text-ink">{meal.name}</p>
+                          <p className="text-xs text-muted">{meal.notes}</p>
+                          {meal.prep_batch ? (
+                            <p className="text-xs text-court">
+                              From prep: {meal.prep_batch}
+                            </p>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}

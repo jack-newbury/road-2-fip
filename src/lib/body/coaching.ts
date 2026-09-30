@@ -51,7 +51,7 @@ Return ONLY valid JSON matching this schema (no markdown fences):
       "weekday": "Monday",
       "training_note": "string or null",
       "meals": [
-        { "slot": "breakfast|lunch|dinner|snack_pre|snack_post", "name": "string", "notes": "string", "prep_batch": "string or null" }
+        { "slot": "breakfast|lunch|dinner|snack_pre|snack_post", "name": "string", "eat_time": "HH:MM", "notes": "string", "prep_batch": "string or null" }
       ]
     }
   ],
@@ -67,6 +67,7 @@ Return ONLY valid JSON matching this schema (no markdown fences):
 Rules:
 - Exactly 7 days starting from the given week_start (Mon–Sun).
 - Keep meal notes short (1 line). Keep shopping to essentials (~25–40 items).
+- Every meal MUST include eat_time as 24h HH:MM (UK). Typical anchors: breakfast ~07:30, lunch ~12:30, dinner ~19:00; on court evenings shift dinner later and put snack_pre 60–90 min before session, snack_post within 30 min after.
 - Use body metrics + body_goal to set portions (lose_fat = higher protein, controlled carbs; gain = surplus with quality carbs around court).
 - Batch-cook friendly; UK supermarket names/pack sizes.
 - Hit protein and calorie targets in preferences.
@@ -199,18 +200,21 @@ export function buildTemplatePlan(
       {
         slot: "breakfast",
         name: "Greek yoghurt bowl + oats + berries",
+        eat_time: "07:30",
         notes: `${Math.round(200 * people)}g yoghurt, 60g oats`,
         prep_batch: "Berry portion packs",
       },
       {
         slot: "lunch",
         name: "Chicken rice boxes",
+        eat_time: "12:30",
         notes: "Reheat from Sunday batch",
         prep_batch: "Chicken + rice batch",
       },
       {
         slot: "dinner",
         name: isCourt ? "Salmon, potatoes, greens" : "Beef chilli + rice",
+        eat_time: isCourt ? "20:15" : "19:00",
         notes: isCourt ? "Carbs for evening session" : "Batch portion",
         prep_batch: isCourt ? null : "Chilli batch",
       },
@@ -220,13 +224,15 @@ export function buildTemplatePlan(
         {
           slot: "snack_pre",
           name: "Banana + PB rice cake",
+          eat_time: "17:30",
           notes: "60–90 min pre-court",
           prep_batch: null,
         },
         {
           slot: "snack_post",
           name: "Chocolate milk + whey",
-          notes: "Within 30 min",
+          eat_time: "21:00",
+          notes: "Within 30 min of finishing",
           prep_batch: null,
         },
       );
