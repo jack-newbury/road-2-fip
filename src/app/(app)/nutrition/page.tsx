@@ -1,4 +1,8 @@
-import { upsertNutrition } from "@/lib/actions";
+import {
+  ensureDefaultSupplements,
+  upsertNutrition,
+} from "@/lib/actions";
+import { SupplementTracker } from "@/components/SupplementTracker";
 import {
   Field,
   PageHeader,
@@ -7,6 +11,7 @@ import {
   TextInput,
   TextTextarea,
 } from "@/components/ui";
+import type { Supplement } from "@/lib/supplements/types";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayISO } from "@/lib/utils";
 import Link from "next/link";
@@ -20,7 +25,16 @@ export default async function NutritionPage() {
   if (!user) redirect("/login");
 
   const today = todayISO();
-  const [{ data: todayLog }, { data: logs }] = await Promise.all([
+
+  // Seed creatine / multi / omega-3 if this account has an empty stack
+  await ensureDefaultSupplements();
+
+  const [
+    { data: todayLog },
+    { data: logs },
+    { data: supplements },
+    { data: todaySuppLogs },
+  ] = await Promise.all([
     supabase
       .from("nutrition_logs")
       .select("*")
@@ -33,13 +47,26 @@ export default async function NutritionPage() {
       .eq("user_id", user.id)
       .order("log_date", { ascending: false })
       .limit(14),
+    supabase
+      .from("supplements")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("supplement_logs")
+      .select("supplement_id, taken")
+      .eq("user_id", user.id)
+      .eq("log_date", today)
+      .eq("taken", true),
   ]);
+
+  const takenIds = (todaySuppLogs || []).map((l) => l.supplement_id as string);
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Nutrition"
-        description="Fuel for court days — protein, hydration, and energy around sessions."
+        description="Fuel for court days — protein, hydration, supplements, and energy around sessions."
       />
 
       <p className="text-sm text-muted">
@@ -47,8 +74,14 @@ export default async function NutritionPage() {
         <Link href="/meal-prep" className="font-semibold text-court underline">
           Open meal prep
         </Link>{" "}
-        to generate meals, order list, and Sunday cook steps.
+        to generate meals, order list, Sunday cook steps, and supplement timing.
       </p>
+
+      <SupplementTracker
+        logDate={today}
+        supplements={(supplements as Supplement[]) || []}
+        takenIds={takenIds}
+      />
 
       <SectionCard title="Today">
         <form action={upsertNutrition} className="grid gap-4 sm:grid-cols-2">

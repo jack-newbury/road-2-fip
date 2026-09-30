@@ -248,6 +248,39 @@ export function MealPrepClient({
             ) : null}
           </SectionCard>
 
+          {(plan.plan.supplements || []).length > 0 ? (
+            <SectionCard title="Recommended supplements">
+              <p className="mb-4 text-sm text-muted">
+                Timed with this week’s meals. Track daily taken on{" "}
+                <Link href="/nutrition" className="text-court underline">
+                  Nutrition
+                </Link>
+                .
+              </p>
+              <ul className="space-y-3">
+                {(plan.plan.supplements || []).map((s) => (
+                  <li
+                    key={`${s.name}-${s.timing}`}
+                    className="border-b border-line pb-3 last:border-0 last:pb-0"
+                  >
+                    <p className="text-sm font-medium text-ink">
+                      {s.name}
+                      {s.dose ? (
+                        <span className="font-normal text-muted"> · {s.dose}</span>
+                      ) : null}
+                    </p>
+                    {s.timing ? (
+                      <p className="text-xs text-court">{s.timing}</p>
+                    ) : null}
+                    {s.why ? (
+                      <p className="mt-0.5 text-xs text-muted">{s.why}</p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          ) : null}
+
           <SectionCard
             title={`Order list · ${shoppingProgress.done}/${shoppingProgress.total}`}
             action={

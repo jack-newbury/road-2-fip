@@ -42,6 +42,13 @@ export type MealPlanContent = {
   shopping: ShoppingItem[];
   prep: PrepStep[];
   order_tips: string[];
+  /** Suggested daily supplements timed with the week’s meals */
+  supplements?: Array<{
+    name: string;
+    dose: string;
+    timing: string;
+    why: string;
+  }>;
 };
 
 export type MealPlanPreferences = {

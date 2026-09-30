@@ -20,6 +20,7 @@ import type {
   MealPlanContent,
   MealPlanPreferences,
 } from "@/lib/meal-prep/types";
+import { DEFAULT_SUPPLEMENTS } from "@/lib/supplements/types";
 import { claudeJson, claudeText, isClaudeConfigured } from "@/lib/ai/claude";
 import { createClient } from "@/lib/supabase/server";
 import { currentPhase } from "@/lib/utils";
@@ -301,6 +302,132 @@ export async function upsertNutrition(formData: FormData) {
   revalidatePath("/");
 }
 
+/** Ensure the user has a default stack (creatine, multi, omega-3). */
+export async function ensureDefaultSupplements() {
+  try {
+    const { supabase, user } = await requireUser();
+    const { count, error: countError } = await supabase
+      .from("supplements")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (countError) {
+      return {
+        ok: false as const,
+        error: `${countError.message}. Run supabase/migrations/007_supplements.sql in Supabase.`,
+      };
+    }
+
+    if ((count ?? 0) > 0) return { ok: true as const };
+
+    const { error } = await supabase.from("supplements").insert(
+      DEFAULT_SUPPLEMENTS.map((s) => ({
+        user_id: user.id,
+        ...s,
+        active: true,
+      })),
+    );
+    if (error) {
+      return {
+        ok: false as const,
+        error: `${error.message}. Run supabase/migrations/007_supplements.sql in Supabase.`,
+      };
+    }
+    return { ok: true as const };
+  } catch (err) {
+    return {
+      ok: false as const,
+      error: err instanceof Error ? err.message : "Could not seed supplements.",
+    };
+  }
+}
+
+export async function upsertSupplement(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const id = String(formData.get("id") || "").trim();
+  const payload = {
+    user_id: user.id,
+    name: String(formData.get("name") || "").trim(),
+    dose: String(formData.get("dose") || "").trim() || null,
+    timing: String(formData.get("timing") || "").trim() || null,
+    notes: String(formData.get("notes") || "").trim() || null,
+    active: formData.get("active") !== "off",
+    sort_order: Number(formData.get("sort_order") || 99),
+  };
+  if (!payload.name) throw new Error("Supplement name is required.");
+
+  const { error } = id
+    ? await supabase.from("supplements").update(payload).eq("id", id).eq("user_id", user.id)
+    : await supabase.from("supplements").insert(payload);
+
+  if (error) {
+    throw new Error(
+      `${error.message}. Run supabase/migrations/007_supplements.sql if needed.`,
+    );
+  }
+  revalidatePath("/nutrition");
+  revalidatePath("/meal-prep");
+}
+
+export async function deleteSupplement(id: string) {
+  const { supabase, user } = await requireUser();
+  await supabase
+    .from("supplements")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+  revalidatePath("/nutrition");
+  revalidatePath("/meal-prep");
+}
+
+export async function toggleSupplementTaken(
+  supplementId: string,
+  logDate: string,
+  taken: boolean,
+) {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("supplement_logs").upsert(
+    {
+      user_id: user.id,
+      supplement_id: supplementId,
+      log_date: logDate,
+      taken,
+    },
+    { onConflict: "user_id,supplement_id,log_date" },
+  );
+  if (error) {
+    throw new Error(
+      `${error.message}. Run supabase/migrations/007_supplements.sql if needed.`,
+    );
+  }
+  revalidatePath("/nutrition");
+  revalidatePath("/");
+}
+
+export async function markAllSupplementsTaken(logDate: string) {
+  const { supabase, user } = await requireUser();
+  const { data: stack } = await supabase
+    .from("supplements")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("active", true);
+
+  if (!stack?.length) return;
+
+  const { error } = await supabase.from("supplement_logs").upsert(
+    stack.map((s) => ({
+      user_id: user.id,
+      supplement_id: s.id,
+      log_date: logDate,
+      taken: true,
+    })),
+    { onConflict: "user_id,supplement_id,log_date" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/nutrition");
+  revalidatePath("/");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -463,8 +590,12 @@ export async function generateMealPlan(formData: FormData): Promise<{
   );
   let prefs = prefsFromForm(formData);
 
-  const [{ data: profile }, { data: latestMetric }, { data: recentRecovery }] =
-    await Promise.all([
+  const [
+    { data: profile },
+    { data: latestMetric },
+    { data: recentRecovery },
+    { data: supplementStack },
+  ] = await Promise.all([
       supabase
         .from("profiles")
         .select(
@@ -485,6 +616,12 @@ export async function generateMealPlan(formData: FormData): Promise<{
         .eq("user_id", user.id)
         .order("log_date", { ascending: false })
         .limit(5),
+      supabase
+        .from("supplements")
+        .select("name, dose, timing, notes, active")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .order("sort_order"),
     ]);
 
   const goal = (prefs.body_goal ||
@@ -509,11 +646,23 @@ export async function generateMealPlan(formData: FormData): Promise<{
     prefs.protein_g = suggested.protein_g;
   }
 
+  const currentStack =
+    supplementStack?.length
+      ? supplementStack
+      : DEFAULT_SUPPLEMENTS.map(({ name, dose, timing, notes }) => ({
+          name,
+          dose,
+          timing,
+          notes,
+          active: true,
+        }));
+
   try {
     const plan = await generatePlanContent(weekStart, prefs, {
       profile,
       latest_body_metric: latestMetric,
       recent_recovery: recentRecovery,
+      current_supplements: currentStack,
     });
 
     const { data, error } = await supabase

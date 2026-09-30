@@ -61,7 +61,10 @@ Return ONLY valid JSON matching this schema (no markdown fences):
   "prep": [
     { "id": "p1", "title": "string", "detail": "string", "done": false }
   ],
-  "order_tips": ["string"]
+  "order_tips": ["string"],
+  "supplements": [
+    { "name": "string", "dose": "string", "timing": "string — e.g. with breakfast / post-court", "why": "string" }
+  ]
 }
 
 Rules:
@@ -72,6 +75,7 @@ Rules:
 - Batch-cook friendly; UK supermarket names/pack sizes.
 - Hit protein and calorie targets in preferences.
 - snack_pre / snack_post on training days only.
+- Include a supplements array. Always cover the athlete’s current stack from context (creatine, multivitamin, omega-3 if listed) with dose + timing aligned to meals. Optionally suggest at most 1–2 extras only if clearly useful for padel training (e.g. vitamin D in UK winter) — no medical claims, no megadoses.
 - No medical claims. No emojis.`;
 }
 
@@ -273,6 +277,26 @@ export function buildTemplatePlan(
       },
     ],
     order_tips: [`Order for ${prefs.store} before Sunday prep.`],
+    supplements: [
+      {
+        name: "Creatine monohydrate",
+        dose: "5g",
+        timing: "Daily — any consistent time",
+        why: "Supports repeated high-intensity efforts on court.",
+      },
+      {
+        name: "Multivitamin",
+        dose: "1 serving",
+        timing: "With breakfast (~07:30)",
+        why: "Covers basics on heavy training weeks.",
+      },
+      {
+        name: "Omega-3 (fish oil)",
+        dose: "1–2g EPA+DHA",
+        timing: "With lunch or dinner (with fat)",
+        why: "General recovery / inflammation support.",
+      },
+    ],
   };
 }
 

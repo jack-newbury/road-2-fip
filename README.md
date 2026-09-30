@@ -17,6 +17,8 @@ Personal padel training OS for a dual goal: **first FIP points** (primary) and *
    - [`supabase/migrations/003_kourtos.sql`](supabase/migrations/003_kourtos.sql) (Kourtos / Playtomic cache)
    - [`supabase/migrations/004_meal_prep.sql`](supabase/migrations/004_meal_prep.sql) (weekly meal prep)
    - [`supabase/migrations/005_body_gym.sql`](supabase/migrations/005_body_gym.sql) (body metrics + padel gym plans)
+   - [`supabase/migrations/006_padel_shots.sql`](supabase/migrations/006_padel_shots.sql) (full shot curriculum)
+   - [`supabase/migrations/007_supplements.sql`](supabase/migrations/007_supplements.sql) (supplement stack + daily tracker)
 3. Under **Authentication → Providers → Email**, enable Email sign-in and leave **Confirm email** on or off (off = instant password login after sign-up).
 4. Add redirect URLs: `http://localhost:3000/auth/callback` and your production URL (same path). For password reset, the app uses `/auth/callback?next=/auth/update-password`.
 5. Copy `.env.example` → `.env.local` and fill in:

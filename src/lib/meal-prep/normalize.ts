@@ -47,6 +47,7 @@ export function normalizeMealPlanContent(raw: unknown): MealPlanContent | null {
     root.prep ?? root.prep_steps ?? root.prep_checklist ?? root.checklist,
   );
   const tipsRaw = asArray(root.order_tips ?? root.tips ?? root.notes);
+  const supplementsRaw = asArray(root.supplements ?? root.supplement_stack);
 
   if (!daysRaw.length || !shoppingRaw.length) return null;
 
@@ -106,6 +107,15 @@ export function normalizeMealPlanContent(raw: unknown): MealPlanContent | null {
     shopping,
     prep,
     order_tips: tipsRaw.map((t) => asString(t)).filter(Boolean),
+    supplements: supplementsRaw.map((item) => {
+      const s = asRecord(item);
+      return {
+        name: asString(s.name, "Supplement"),
+        dose: asString(s.dose || s.amount, ""),
+        timing: asString(s.timing || s.when, ""),
+        why: asString(s.why || s.notes || s.reason, ""),
+      };
+    }),
   };
 }
 
