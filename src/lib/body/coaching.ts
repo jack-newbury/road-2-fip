@@ -66,6 +66,7 @@ Return ONLY valid JSON matching this schema (no markdown fences):
 
 Rules:
 - Exactly 7 days starting from the given week_start (Mon–Sun).
+- Keep meal notes short (1 line). Keep shopping to essentials (~25–40 items).
 - Use body metrics + body_goal to set portions (lose_fat = higher protein, controlled carbs; gain = surplus with quality carbs around court).
 - Batch-cook friendly; UK supermarket names/pack sizes.
 - Hit protein and calorie targets in preferences.

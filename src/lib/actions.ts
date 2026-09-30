@@ -14,7 +14,8 @@ import {
 } from "@/lib/body/coaching";
 import type { BodyGoal, GymWeekPlan } from "@/lib/body/types";
 import { fetchKourtosSnapshot } from "@/lib/kourtos/client";
-import { mondayOfWeek } from "@/lib/meal-prep/plan";
+import { mondayOfWeek, toWeekStartMonday } from "@/lib/meal-prep/plan";
+import { parseMealPlanJson } from "@/lib/meal-prep/normalize";
 import type {
   MealPlanContent,
   MealPlanPreferences,
@@ -373,10 +374,11 @@ export async function generateRecap(period: RecapPeriod): Promise<{
   const snapshot = await buildProgressSnapshot(supabase, user.id, period);
 
   try {
-    const content = await claudeText({
+    const { text: content } = await claudeText({
       system: buildRecapSystemPrompt(),
       user: `Generate a ${snapshot.label.toLowerCase()} recap for this athlete using only this data:\n\n${JSON.stringify(snapshot, null, 2)}`,
       temperature: 0.6,
+      maxTokens: 2500,
     });
     if (!content) {
       return { ok: false, error: "The AI returned an empty recap. Try again." };
@@ -444,37 +446,21 @@ async function generatePlanContent(
       context,
     }),
     temperature: 0.5,
+    maxTokens: 8192,
   });
-  if (!raw) return buildTemplatePlan(weekStart, prefs);
 
-  try {
-    const parsed = JSON.parse(raw) as MealPlanContent;
-    if (!parsed.days?.length || !parsed.shopping?.length) {
-      return buildTemplatePlan(weekStart, prefs);
-    }
-    parsed.shopping = parsed.shopping.map((s, i) => ({
-      ...s,
-      id: s.id || `s${i + 1}`,
-      checked: Boolean(s.checked),
-    }));
-    parsed.prep = (parsed.prep || []).map((p, i) => ({
-      ...p,
-      id: p.id || `p${i + 1}`,
-      done: Boolean(p.done),
-    }));
-    return parsed;
-  } catch {
-    return buildTemplatePlan(weekStart, prefs);
-  }
+  return parseMealPlanJson(raw);
 }
 
 export async function generateMealPlan(formData: FormData): Promise<{
   ok: boolean;
   error?: string;
+  weekStart?: string;
 }> {
   const { supabase, user } = await requireUser();
-  const weekStart =
-    String(formData.get("week_start") || "").trim() || mondayOfWeek();
+  const weekStart = toWeekStartMonday(
+    String(formData.get("week_start") || "").trim() || mondayOfWeek(),
+  );
   let prefs = prefsFromForm(formData);
 
   const [{ data: profile }, { data: latestMetric }, { data: recentRecovery }] =
@@ -530,17 +516,21 @@ export async function generateMealPlan(formData: FormData): Promise<{
       recent_recovery: recentRecovery,
     });
 
-    const { error } = await supabase.from("meal_plans").upsert(
-      {
-        user_id: user.id,
-        week_start: weekStart,
-        title: `Meal prep · week of ${weekStart}`,
-        preferences: prefs,
-        plan,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,week_start" },
-    );
+    const { data, error } = await supabase
+      .from("meal_plans")
+      .upsert(
+        {
+          user_id: user.id,
+          week_start: weekStart,
+          title: `Meal prep · week of ${weekStart}`,
+          preferences: prefs,
+          plan,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,week_start" },
+      )
+      .select("id, week_start")
+      .single();
 
     if (error) {
       return {
@@ -551,7 +541,7 @@ export async function generateMealPlan(formData: FormData): Promise<{
 
     revalidatePath("/meal-prep");
     revalidatePath("/nutrition");
-    return { ok: true };
+    return { ok: true, weekStart: data.week_start };
   } catch (err) {
     return {
       ok: false,
@@ -701,14 +691,14 @@ async function generateGymWeekContent(
     return buildTemplateGymPlan(weekStart, priority);
   }
 
-  const raw = await claudeJson({
-    system: gymPlanSystemPrompt(),
-    user: JSON.stringify({ week_start: weekStart, context }),
-    temperature: 0.55,
-  });
-  if (!raw) return buildTemplateGymPlan(weekStart, priority);
-
   try {
+    const raw = await claudeJson({
+      system: gymPlanSystemPrompt(),
+      user: JSON.stringify({ week_start: weekStart, context }),
+      temperature: 0.55,
+      maxTokens: 6144,
+    });
+
     const parsed = JSON.parse(raw) as GymWeekPlan;
     if (!parsed.sessions?.length) {
       return buildTemplateGymPlan(weekStart, priority);

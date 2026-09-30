@@ -5,7 +5,7 @@ export {
   mealPrepSystemPrompt,
 } from "@/lib/body/coaching";
 
-export { mondayOfWeek } from "./types";
+export { mondayOfWeek, toWeekStartMonday } from "./types";
 
 export function defaultPreferences(
   overrides?: Partial<MealPlanPreferences>,

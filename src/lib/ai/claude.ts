@@ -19,19 +19,35 @@ function textFrom(message: Anthropic.Message): string | null {
   return block && block.type === "text" ? block.text.trim() : null;
 }
 
-/** Strip accidental markdown fences around JSON. */
+/** Strip fences / prose and keep the outermost JSON object or array. */
 export function extractJson(raw: string): string {
   const trimmed = raw.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```$/i);
-  return fenced ? fenced[1].trim() : trimmed;
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = (fenced ? fenced[1] : trimmed).trim();
+  const objStart = candidate.indexOf("{");
+  const arrStart = candidate.indexOf("[");
+  let start = -1;
+  if (objStart >= 0 && (arrStart < 0 || objStart < arrStart)) start = objStart;
+  else if (arrStart >= 0) start = arrStart;
+  if (start < 0) return candidate;
+  const open = candidate[start];
+  const close = open === "{" ? "}" : "]";
+  const end = candidate.lastIndexOf(close);
+  if (end > start) return candidate.slice(start, end + 1);
+  return candidate.slice(start);
 }
+
+export type ClaudeTextResult = {
+  text: string | null;
+  stopReason: string | null;
+};
 
 export async function claudeText(opts: {
   system: string;
   user: string;
   temperature?: number;
   maxTokens?: number;
-}): Promise<string | null> {
+}): Promise<ClaudeTextResult> {
   const message = await client().messages.create({
     model: model(),
     max_tokens: opts.maxTokens ?? 4096,
@@ -39,7 +55,10 @@ export async function claudeText(opts: {
     system: opts.system,
     messages: [{ role: "user", content: opts.user }],
   });
-  return textFrom(message);
+  return {
+    text: textFrom(message),
+    stopReason: message.stop_reason,
+  };
 }
 
 export async function claudeJson(opts: {
@@ -47,10 +66,18 @@ export async function claudeJson(opts: {
   user: string;
   temperature?: number;
   maxTokens?: number;
-}): Promise<string | null> {
+}): Promise<string> {
   const system = `${opts.system}
 
 Respond with a single valid JSON object only — no markdown fences, no commentary.`;
-  const raw = await claudeText({ ...opts, system });
-  return raw ? extractJson(raw) : null;
+  const { text, stopReason } = await claudeText({ ...opts, system });
+  if (!text) {
+    throw new Error("Claude returned an empty response. Try again.");
+  }
+  if (stopReason === "max_tokens") {
+    throw new Error(
+      "Claude ran out of output tokens mid-plan. Try again — if it keeps failing, set ANTHROPIC_MODEL to a higher-context model.",
+    );
+  }
+  return extractJson(text);
 }

@@ -18,17 +18,28 @@ import {
 } from "@/components/ui";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export type MealPlanHistoryItem = {
+  id: string;
+  week_start: string;
+  title: string;
+  updated_at: string;
+  summary: string | null;
+};
 
 export function MealPrepClient({
   weekStart,
   plan,
   hasClaude,
   defaultPrefs,
+  history,
 }: {
   weekStart: string;
   plan: MealPlanRow | null;
   hasClaude: boolean;
   defaultPrefs?: ReturnType<typeof defaultPreferences>;
+  history: MealPlanHistoryItem[];
 }) {
   const router = useRouter();
   const prefs = plan?.preferences ?? defaultPrefs ?? defaultPreferences();
@@ -58,8 +69,13 @@ export function MealPrepClient({
     setError(null);
     start(async () => {
       const result = await generateMealPlan(formData);
-      if (!result.ok) setError(result.error ?? "Failed to generate");
-      else router.refresh();
+      if (!result.ok) {
+        setError(result.error ?? "Failed to generate");
+        return;
+      }
+      const week = result.weekStart || weekStart;
+      router.push(`/meal-prep?week=${week}`);
+      router.refresh();
     });
   }
 
@@ -84,10 +100,48 @@ export function MealPrepClient({
 
   return (
     <div className="space-y-8">
+      {history.length > 0 ? (
+        <SectionCard title="Saved weeks">
+          <p className="mb-3 text-sm text-muted">
+            Plans are saved per week — open any past week to review shopping and
+            prep.
+          </p>
+          <ul className="divide-y divide-line text-sm">
+            {history.map((h) => {
+              const active = h.week_start === weekStart;
+              return (
+                <li key={h.id} className="flex items-start justify-between gap-3 py-3">
+                  <div>
+                    <Link
+                      href={`/meal-prep?week=${h.week_start}`}
+                      className={`font-medium hover:underline ${active ? "text-court" : "text-ink"}`}
+                    >
+                      Week of {h.week_start}
+                      {active ? " · viewing" : ""}
+                    </Link>
+                    {h.summary ? (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+                        {h.summary}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 text-xs text-muted">
+                    {new Date(h.updated_at).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </SectionCard>
+      ) : null}
+
       <SectionCard title="Build this week’s plan">
         <p className="mb-4 text-sm text-muted">
           {hasClaude
-            ? "AI builds a padel-fuelled week with shopping list + Sunday prep."
+            ? "AI builds a padel-fuelled week, then saves it here so you can reopen it anytime."
             : "Template plan (add ANTHROPIC_API_KEY for a custom AI plan)."}
         </p>
         <form
@@ -187,7 +241,7 @@ export function MealPrepClient({
             <p className="text-sm leading-relaxed text-ink">{plan.plan.summary}</p>
             {(plan.plan.order_tips || []).length > 0 ? (
               <ul className="mt-4 space-y-1 text-sm text-muted">
-                {plan.plan.order_tips.map((tip) => (
+                {(plan.plan.order_tips || []).map((tip) => (
                   <li key={tip}>· {tip}</li>
                 ))}
               </ul>
@@ -208,13 +262,12 @@ export function MealPrepClient({
           >
             <div className="space-y-4">
               {Object.entries(
-                plan.plan.shopping.reduce<Record<string, typeof plan.plan.shopping>>(
-                  (acc, item) => {
-                    (acc[item.aisle] ||= []).push(item);
-                    return acc;
-                  },
-                  {},
-                ),
+                (plan.plan.shopping || []).reduce<
+                  Record<string, typeof plan.plan.shopping>
+                >((acc, item) => {
+                  (acc[item.aisle] ||= []).push(item);
+                  return acc;
+                }, {}),
               ).map(([aisle, items]) => (
                 <div key={aisle}>
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-clay">
@@ -262,7 +315,7 @@ export function MealPrepClient({
             title={`Sunday prep · ${prepProgress.done}/${prepProgress.total}`}
           >
             <ul className="space-y-3">
-              {plan.plan.prep.map((step) => (
+              {(plan.plan.prep || []).map((step) => (
                 <li key={step.id}>
                   <label className="flex cursor-pointer items-start gap-3">
                     <input
@@ -294,7 +347,7 @@ export function MealPrepClient({
 
           <SectionCard title="Daily meals">
             <div className="space-y-6">
-              {plan.plan.days.map((day) => (
+              {(plan.plan.days || []).map((day) => (
                 <div key={day.date} className="border-b border-line pb-5 last:border-0">
                   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="font-display text-base font-semibold text-charcoal">
@@ -306,7 +359,7 @@ export function MealPrepClient({
                     <p className="mb-2 text-xs text-court">{day.training_note}</p>
                   ) : null}
                   <ul className="space-y-2">
-                    {day.meals.map((meal, idx) => (
+                    {(day.meals || []).map((meal, idx) => (
                       <li key={`${day.date}-${idx}`} className="text-sm">
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-clay">
                           {SLOT_LABELS[meal.slot] || meal.slot}
@@ -326,7 +379,14 @@ export function MealPrepClient({
             </div>
           </SectionCard>
         </>
-      ) : null}
+      ) : (
+        <SectionCard title="This week">
+          <p className="text-sm text-muted">
+            No saved plan for week of {weekStart} yet. Generate one above — it
+            will be stored so you can come back to it later.
+          </p>
+        </SectionCard>
+      )}
     </div>
   );
 }

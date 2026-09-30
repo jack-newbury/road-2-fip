@@ -3,7 +3,8 @@ import { PageHeader } from "@/components/ui";
 import { suggestCalories } from "@/lib/body/coaching";
 import type { BodyGoal } from "@/lib/body/types";
 import { defaultPreferences, mondayOfWeek } from "@/lib/meal-prep/plan";
-import type { MealPlanRow } from "@/lib/meal-prep/types";
+import { toWeekStartMonday } from "@/lib/meal-prep/types";
+import type { MealPlanContent, MealPlanRow } from "@/lib/meal-prep/types";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 import Link from "next/link";
@@ -21,24 +22,31 @@ export default async function MealPrepPage({
   if (!user) redirect("/login");
 
   const params = await searchParams;
-  const weekStart = params.week || mondayOfWeek();
+  const weekStart = toWeekStartMonday(params.week || mondayOfWeek());
 
-  const [{ data }, { data: profile }, { data: metric }] = await Promise.all([
-    supabase
-      .from("meal_plans")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("week_start", weekStart)
-      .maybeSingle(),
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase
-      .from("body_metrics")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("log_date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const [{ data }, { data: profile }, { data: metric }, { data: historyRows }] =
+    await Promise.all([
+      supabase
+        .from("meal_plans")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("week_start", weekStart)
+        .maybeSingle(),
+      supabase.from("profiles").select("*").eq("id", user.id).single(),
+      supabase
+        .from("body_metrics")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("log_date", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("meal_plans")
+        .select("id, week_start, title, updated_at, plan")
+        .eq("user_id", user.id)
+        .order("week_start", { ascending: false })
+        .limit(16),
+    ]);
 
   const p = profile as Profile;
   const suggested = suggestCalories({
@@ -55,11 +63,22 @@ export default async function MealPrepPage({
     protein_g: suggested.protein_g,
   });
 
+  const history = (historyRows || []).map((row) => {
+    const plan = row.plan as MealPlanContent | null;
+    return {
+      id: row.id as string,
+      week_start: row.week_start as string,
+      title: row.title as string,
+      updated_at: row.updated_at as string,
+      summary: plan?.summary ?? null,
+    };
+  });
+
   return (
     <div>
       <PageHeader
         title="Meal prep"
-        description="Tailored to your body metrics and composition goal — order list + Sunday prep for court weeks."
+        description="Tailored to your body metrics and composition goal — order list + Sunday prep for court weeks. Saved plans stay available by week."
       />
       <p className="mb-6 text-sm text-muted">
         {metric ? (
@@ -89,6 +108,7 @@ export default async function MealPrepPage({
         plan={(data as MealPlanRow | null) ?? null}
         hasClaude={Boolean(process.env.ANTHROPIC_API_KEY)}
         defaultPrefs={defaults}
+        history={history}
       />
     </div>
   );
