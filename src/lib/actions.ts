@@ -14,6 +14,7 @@ import {
 } from "@/lib/body/coaching";
 import type { BodyGoal, GymWeekPlan } from "@/lib/body/types";
 import { fetchKourtosSnapshot } from "@/lib/kourtos/client";
+import { fetchLtaRanking } from "@/lib/lta/client";
 import { mondayOfWeek, toWeekStartMonday } from "@/lib/meal-prep/plan";
 import { parseMealPlanJson } from "@/lib/meal-prep/normalize";
 import type {
@@ -479,6 +480,72 @@ export async function syncKourtos(): Promise<{
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Kourtos sync failed.",
+    };
+  }
+}
+
+export async function syncLtaRanking(formData?: FormData): Promise<{
+  ok: boolean;
+  error?: string;
+  rank?: number | null;
+}> {
+  const { supabase, user } = await requireUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("lta_player_number, lta_profile_guid")
+    .eq("id", user.id)
+    .single();
+
+  const fromForm = formData
+    ? String(formData.get("lta_player_number") || "").trim()
+    : "";
+  const playerNumber =
+    fromForm ||
+    profile?.lta_player_number ||
+    process.env.LTA_PLAYER_NUMBER?.trim() ||
+    "";
+
+  if (!playerNumber) {
+    return {
+      ok: false,
+      error: "Add your LTA player number (e.g. 136873792), then sync.",
+    };
+  }
+
+  try {
+    const snapshot = await fetchLtaRanking(
+      playerNumber,
+      profile?.lta_profile_guid,
+    );
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        lta_player_number: snapshot.player_number,
+        lta_profile_guid: snapshot.profile_guid,
+        lta_ranking: snapshot,
+        lta_synced_at: snapshot.synced_at,
+        uk_ranking: snapshot.primary?.rank ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      return {
+        ok: false,
+        error: `${error.message}. Run supabase/migrations/008_lta_ranking.sql in Supabase.`,
+      };
+    }
+
+    revalidatePath("/");
+    revalidatePath("/profile");
+    revalidatePath("/recaps");
+    return { ok: true, rank: snapshot.primary?.rank ?? null };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "LTA ranking sync failed.",
     };
   }
 }

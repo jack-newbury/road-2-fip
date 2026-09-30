@@ -42,6 +42,10 @@ export type Profile = {
   kourtos_overview: Record<string, unknown> | null;
   kourtos_recent_matches: unknown[] | null;
   kourtos_synced_at: string | null;
+  lta_player_number?: string | null;
+  lta_profile_guid?: string | null;
+  lta_ranking?: Record<string, unknown> | null;
+  lta_synced_at?: string | null;
   height_cm?: number | null;
   sex?: "male" | "female" | "other" | null;
   body_goal?: "lose_fat" | "recomp" | "maintain" | "gain";

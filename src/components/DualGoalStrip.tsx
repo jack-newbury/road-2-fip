@@ -25,9 +25,11 @@ export function DualGoalStrip({ profile }: { profile: Profile }) {
           {rank ? `#${rank}` : "Unranked"}
         </p>
         <p className="text-xs text-white/70">
-          {ukDays > 0
-            ? `${ukDays} days to goal date`
-            : "Update ranking in Profile"}
+          {rank
+            ? ukDays > 0
+              ? `${ukDays} days to top-100 goal`
+              : "Synced from LTA · keep climbing"
+            : "Sync LTA ranking in Profile"}
         </p>
       </div>
     </div>

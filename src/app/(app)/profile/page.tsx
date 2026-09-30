@@ -1,4 +1,5 @@
 import { signOut, updateProfile } from "@/lib/actions";
+import { LtaSyncCard } from "@/components/LtaSyncCard";
 import {
   Field,
   PageHeader,
@@ -7,6 +8,7 @@ import {
   TextInput,
   TextSelect,
 } from "@/components/ui";
+import type { LtaRankingSnapshot } from "@/lib/lta/client";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 import Link from "next/link";
@@ -27,13 +29,24 @@ export default async function ProfilePage() {
 
   const p = profile as Profile;
   const targets = p.weekly_targets;
+  const ltaSnapshot = (p.lta_ranking || null) as LtaRankingSnapshot | null;
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Profile"
-        description="Goals, home base, and weekly targets. Update UK ranking when the list refreshes."
+        description="Goals, home base, and weekly targets. Sync UK ranking from your LTA player number."
       />
+
+      <SectionCard title="LTA UK ranking">
+        <LtaSyncCard
+          playerNumber={
+            p.lta_player_number || process.env.LTA_PLAYER_NUMBER || null
+          }
+          snapshot={ltaSnapshot}
+          syncedAt={p.lta_synced_at ?? null}
+        />
+      </SectionCard>
 
       <SectionCard title="Athlete">
         <form action={updateProfile} className="grid gap-4 sm:grid-cols-2">
@@ -55,13 +68,16 @@ export default async function ProfilePage() {
               defaultValue={p.started_padel_at}
             />
           </Field>
-          <Field label="Current UK ranking" hint="Leave blank if unranked">
+          <Field
+            label="Current UK ranking"
+            hint="Auto-filled by LTA sync — edit only if you need to override"
+          >
             <TextInput
               name="uk_ranking"
               type="number"
               min={1}
               defaultValue={p.uk_ranking ?? ""}
-              placeholder="e.g. 420"
+              placeholder="e.g. 2938"
             />
           </Field>
           <Field label="FIP goal date">
