@@ -83,4 +83,6 @@ export const BODY_FIELD_HELP = {
     "Anything that affects the reading — fasted vs fed, travel, illness, different scales, or DEXA day.",
   goal_card:
     "Your composition target. Meal prep calories/protein and gym plans lean on this setting.",
+  targets_card:
+    "Suggested weight and body-fat aims for padel performance based on your latest check-in, height/sex, and composition goal. Estimates — not medical advice.",
 } as const;

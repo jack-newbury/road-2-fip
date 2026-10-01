@@ -315,3 +315,209 @@ export function metricTrend(logs: BodyMetric[]): {
         : null,
   };
 }
+
+/** Athletic BF% bands that suit court sports (padel / tennis). */
+export function athleticBfBand(sex: string | null): {
+  low: number;
+  high: number;
+  aim: number;
+  label: string;
+} {
+  if (sex === "female") {
+    return {
+      low: 18,
+      high: 24,
+      aim: 20,
+      label: "athletic ♀ ~18–24%",
+    };
+  }
+  return {
+    low: 10,
+    high: 15,
+    aim: 12,
+    label: "athletic ♂ ~10–15%",
+  };
+}
+
+export type BodyTargets = {
+  currentWeightKg: number | null;
+  currentBfPct: number | null;
+  leanMassKg: number | null;
+  targetWeightKg: number | null;
+  targetBfPct: number | null;
+  targetLeanKg: number | null;
+  weightDeltaKg: number | null;
+  bfDeltaPts: number | null;
+  estimatedWeeks: number | null;
+  calories: number;
+  protein_g: number;
+  bandLabel: string;
+  rationale: string;
+  missing: string[];
+  ready: boolean;
+};
+
+function estimateLeanMassKg(
+  weightKg: number,
+  bodyFatPct: number | null,
+  sex: string | null,
+): { lean: number; estimated: boolean } {
+  if (bodyFatPct != null && bodyFatPct > 3 && bodyFatPct < 55) {
+    return { lean: weightKg * (1 - bodyFatPct / 100), estimated: false };
+  }
+  // Rough lean fraction when BF% missing
+  const frac = sex === "female" ? 0.72 : sex === "male" ? 0.78 : 0.76;
+  return { lean: weightKg * frac, estimated: true };
+}
+
+/**
+ * Composition targets for a padel athlete: preserve (or grow) lean mass,
+ * aim BF into an athletic band based on body_goal.
+ */
+export function suggestBodyTargets(args: {
+  weightKg: number | null;
+  bodyFatPct: number | null;
+  heightCm: number | null;
+  sex: string | null;
+  goal: BodyGoal;
+}): BodyTargets {
+  const macros = suggestCalories(args);
+  const band = athleticBfBand(args.sex);
+  const missing: string[] = [];
+  if (args.weightKg == null) missing.push("Log a weight check-in");
+  if (args.bodyFatPct == null)
+    missing.push("Log body fat % for accurate lean-mass targets");
+  if (args.heightCm == null) missing.push("Add height in body settings");
+
+  if (args.weightKg == null) {
+    return {
+      currentWeightKg: null,
+      currentBfPct: args.bodyFatPct,
+      leanMassKg: null,
+      targetWeightKg: null,
+      targetBfPct: band.aim,
+      targetLeanKg: null,
+      weightDeltaKg: null,
+      bfDeltaPts: null,
+      estimatedWeeks: null,
+      calories: macros.calories,
+      protein_g: macros.protein_g,
+      bandLabel: band.label,
+      rationale:
+        "Log weight (and ideally BF%) to calculate personal weight and body-fat targets.",
+      missing,
+      ready: false,
+    };
+  }
+
+  const weight = args.weightKg;
+  const bf = args.bodyFatPct;
+  const { lean, estimated } = estimateLeanMassKg(weight, bf, args.sex);
+
+  let targetBf: number;
+  let targetLean = lean;
+  let rationale: string;
+
+  switch (args.goal) {
+    case "lose_fat": {
+      if (bf != null) {
+        if (bf > band.high) targetBf = band.high;
+        else if (bf > band.aim) targetBf = band.aim;
+        else targetBf = Math.max(band.low, Math.round((bf - 1) * 10) / 10);
+      } else {
+        targetBf = band.aim;
+      }
+      targetLean = lean; // keep lean mass
+      rationale = estimated
+        ? `Lose fat while holding lean mass (est.). First aim ~${targetBf}% BF (${band.label}), then reassess.`
+        : `Lose fat while holding ~${lean.toFixed(1)}kg lean. Aim ~${targetBf}% BF (${band.label}).`;
+      break;
+    }
+    case "recomp": {
+      if (bf != null) {
+        targetBf =
+          bf > band.aim
+            ? Math.max(band.aim, Math.round((bf - 2) * 10) / 10)
+            : bf;
+      } else {
+        targetBf = band.aim;
+      }
+      targetLean = Math.round(lean * 1.015 * 10) / 10; // ~1.5% lean nudge
+      rationale = `Recomp: nudge lean up slightly and bring BF toward ~${targetBf}% without big scale swings.`;
+      break;
+    }
+    case "gain": {
+      targetBf =
+        bf != null
+          ? Math.min(Math.round((bf + 1.5) * 10) / 10, band.high + 2)
+          : band.high;
+      targetLean = Math.round(lean * 1.04 * 10) / 10; // ~4% lean phase
+      rationale = `Lean-gain phase: add ~${(targetLean - lean).toFixed(1)}kg lean while keeping BF near athletic (${band.label}).`;
+      break;
+    }
+    default: {
+      // maintain
+      targetBf = bf ?? band.aim;
+      targetLean = lean;
+      rationale =
+        bf != null
+          ? `Hold current composition (~${weight.toFixed(1)}kg @ ${bf}%). Fuel for training quality.`
+          : `Hold current weight (~${weight.toFixed(1)}kg). Add BF% for a sharper maintain target.`;
+      break;
+    }
+  }
+
+  let targetWeight = targetLean / (1 - targetBf / 100);
+  targetWeight = Math.round(targetWeight * 10) / 10;
+
+  // Guardrails by goal
+  if (args.goal === "lose_fat" && targetWeight > weight) {
+    targetWeight = weight;
+  }
+  if (args.goal === "maintain") {
+    targetWeight = weight;
+    targetLean = lean;
+  }
+  if (args.goal === "gain" && targetWeight < weight) {
+    targetWeight = Math.round((weight + 1.5) * 10) / 10;
+  }
+
+  const weightDelta = Math.round((targetWeight - weight) * 10) / 10;
+  const bfDelta =
+    bf != null ? Math.round((targetBf - bf) * 10) / 10 : null;
+
+  let estimatedWeeks: number | null = null;
+  if (Math.abs(weightDelta) >= 0.4) {
+    const kgPerWeek = args.goal === "gain" ? 0.25 : 0.45;
+    estimatedWeeks = Math.max(4, Math.ceil(Math.abs(weightDelta) / kgPerWeek));
+  } else if (bfDelta != null && Math.abs(bfDelta) >= 1) {
+    estimatedWeeks = Math.max(4, Math.ceil(Math.abs(bfDelta) / 0.35));
+  }
+
+  // Height sanity: flag very high BMI target (informational only via rationale)
+  if (args.heightCm && args.heightCm > 120) {
+    const bmi =
+      targetWeight / Math.pow(args.heightCm / 100, 2);
+    if (bmi < 18.5) {
+      rationale += ` Target BMI ~${bmi.toFixed(1)} is light — keep protein high and monitor energy on court.`;
+    }
+  }
+
+  return {
+    currentWeightKg: weight,
+    currentBfPct: bf,
+    leanMassKg: Math.round(lean * 10) / 10,
+    targetWeightKg: targetWeight,
+    targetBfPct: Math.round(targetBf * 10) / 10,
+    targetLeanKg: Math.round(targetLean * 10) / 10,
+    weightDeltaKg: weightDelta,
+    bfDeltaPts: bfDelta,
+    estimatedWeeks,
+    calories: macros.calories,
+    protein_g: macros.protein_g,
+    bandLabel: band.label,
+    rationale,
+    missing,
+    ready: true,
+  };
+}

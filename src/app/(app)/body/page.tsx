@@ -3,9 +3,10 @@ import {
   upsertBodyMetric,
   updateProfile,
 } from "@/lib/actions";
-import { metricTrend } from "@/lib/body/coaching";
-import type { BodyMetric } from "@/lib/body/types";
+import { metricTrend, suggestBodyTargets } from "@/lib/body/coaching";
+import type { BodyMetric, BodyGoal } from "@/lib/body/types";
 import { BODY_FIELD_HELP, BODY_GOAL_LABELS } from "@/lib/body/types";
+import { BodyTargetsCard } from "@/components/BodyTargetsCard";
 import {
   DangerButton,
   Field,
@@ -44,6 +45,14 @@ export default async function BodyPage() {
   const metrics = (logs as BodyMetric[]) || [];
   const latest = metrics[0] ?? null;
   const trend = metricTrend(metrics);
+  const goal = (p.body_goal ?? "recomp") as BodyGoal;
+  const targets = suggestBodyTargets({
+    weightKg: latest ? Number(latest.weight_kg) : null,
+    bodyFatPct: latest?.body_fat_pct != null ? Number(latest.body_fat_pct) : null,
+    heightCm: p.height_cm != null ? Number(p.height_cm) : null,
+    sex: p.sex ?? null,
+    goal,
+  });
 
   return (
     <div className="space-y-8">
@@ -91,7 +100,7 @@ export default async function BodyPage() {
             <InfoTooltip text={BODY_FIELD_HELP.goal_card} />
           </p>
           <p className="font-display text-lg font-bold text-charcoal">
-            {BODY_GOAL_LABELS[p.body_goal ?? "recomp"]}
+            {BODY_GOAL_LABELS[goal]}
           </p>
           <p className="text-xs text-muted">
             <Link href="/meal-prep" className="text-court underline">
@@ -101,6 +110,8 @@ export default async function BodyPage() {
           </p>
         </div>
       </div>
+
+      <BodyTargetsCard targets={targets} />
 
       <SectionCard title="Log check-in">
         <form action={upsertBodyMetric} className="grid gap-4 sm:grid-cols-2">
@@ -220,7 +231,7 @@ export default async function BodyPage() {
               label="Body composition goal"
               tooltip={BODY_FIELD_HELP.body_goal}
             >
-              <TextSelect name="body_goal" defaultValue={p.body_goal ?? "recomp"}>
+              <TextSelect name="body_goal" defaultValue={goal}>
                 <option value="lose_fat">Lose fat (keep power)</option>
                 <option value="recomp">Recomp</option>
                 <option value="maintain">Maintain</option>
