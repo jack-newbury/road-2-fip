@@ -3,12 +3,12 @@ import {
   DangerButton,
   Field,
   PageHeader,
-  PrimaryButton,
   SectionCard,
   TextInput,
   TextSelect,
   TextTextarea,
 } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { LEVEL_LABELS } from "@/lib/types";
 import { formatDate, todayISO } from "@/lib/utils";
@@ -82,7 +82,7 @@ export default async function CompetitionsPage() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save competition</PrimaryButton>
+            <SubmitButton>Save competition</SubmitButton>
           </div>
         </form>
       </SectionCard>

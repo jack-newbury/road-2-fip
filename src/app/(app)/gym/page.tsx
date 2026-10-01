@@ -7,12 +7,12 @@ import {
   DangerButton,
   Field,
   PageHeader,
-  PrimaryButton,
   SectionCard,
   TextInput,
   TextSelect,
   TextTextarea,
 } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import type { GymPlanRow } from "@/lib/body/types";
 import { mondayOfWeek } from "@/lib/meal-prep/types";
 import { createClient } from "@/lib/supabase/server";
@@ -130,7 +130,7 @@ export default async function GymPage({
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save gym</PrimaryButton>
+            <SubmitButton>Save gym</SubmitButton>
           </div>
         </form>
       </SectionCard>

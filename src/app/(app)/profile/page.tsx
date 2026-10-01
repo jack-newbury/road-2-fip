@@ -3,11 +3,11 @@ import { LtaSyncCard } from "@/components/LtaSyncCard";
 import {
   Field,
   PageHeader,
-  PrimaryButton,
   SectionCard,
   TextInput,
   TextSelect,
 } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import type { LtaRankingSnapshot } from "@/lib/lta/client";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
@@ -147,7 +147,7 @@ export default async function ProfilePage() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save profile</PrimaryButton>
+            <SubmitButton>Save profile</SubmitButton>
           </div>
         </form>
         <p className="mt-4 text-xs text-muted">

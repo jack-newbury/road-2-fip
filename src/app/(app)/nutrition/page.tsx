@@ -6,11 +6,11 @@ import { SupplementTracker } from "@/components/SupplementTracker";
 import {
   Field,
   PageHeader,
-  PrimaryButton,
   SectionCard,
   TextInput,
   TextTextarea,
 } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import type { Supplement } from "@/lib/supplements/types";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayISO } from "@/lib/utils";
@@ -147,7 +147,7 @@ export default async function NutritionPage() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save nutrition</PrimaryButton>
+            <SubmitButton>Save nutrition</SubmitButton>
           </div>
         </form>
       </SectionCard>

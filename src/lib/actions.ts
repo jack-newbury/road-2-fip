@@ -134,7 +134,6 @@ export async function updateSkillStatus(
   );
   if (error) throw new Error(error.message);
   revalidatePath("/roadmap");
-  revalidatePath("/");
 }
 
 export async function addPracticeSession(formData: FormData) {
@@ -155,7 +154,6 @@ export async function addPracticeSession(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/practice");
-  revalidatePath("/");
 }
 
 export async function deletePracticeSession(id: string) {
@@ -166,7 +164,6 @@ export async function deletePracticeSession(id: string) {
     .eq("id", id)
     .eq("user_id", user.id);
   revalidatePath("/practice");
-  revalidatePath("/");
 }
 
 export async function addCoachingSession(formData: FormData) {
@@ -183,7 +180,6 @@ export async function addCoachingSession(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/coaching");
-  revalidatePath("/");
 }
 
 export async function deleteCoachingSession(id: string) {
@@ -194,7 +190,6 @@ export async function deleteCoachingSession(id: string) {
     .eq("id", id)
     .eq("user_id", user.id);
   revalidatePath("/coaching");
-  revalidatePath("/");
 }
 
 export async function addGymSession(formData: FormData) {
@@ -209,7 +204,6 @@ export async function addGymSession(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/gym");
-  revalidatePath("/");
 }
 
 export async function deleteGymSession(id: string) {
@@ -220,7 +214,6 @@ export async function deleteGymSession(id: string) {
     .eq("id", id)
     .eq("user_id", user.id);
   revalidatePath("/gym");
-  revalidatePath("/");
 }
 
 export async function addCompetition(formData: FormData) {
@@ -237,7 +230,6 @@ export async function addCompetition(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/competitions");
-  revalidatePath("/");
 }
 
 export async function deleteCompetition(id: string) {
@@ -248,7 +240,6 @@ export async function deleteCompetition(id: string) {
     .eq("id", id)
     .eq("user_id", user.id);
   revalidatePath("/competitions");
-  revalidatePath("/");
 }
 
 export async function upsertRecovery(formData: FormData) {
@@ -275,7 +266,6 @@ export async function upsertRecovery(formData: FormData) {
   );
   if (error) throw new Error(error.message);
   revalidatePath("/recovery");
-  revalidatePath("/");
 }
 
 export async function upsertNutrition(formData: FormData) {
@@ -300,7 +290,6 @@ export async function upsertNutrition(formData: FormData) {
   );
   if (error) throw new Error(error.message);
   revalidatePath("/nutrition");
-  revalidatePath("/");
 }
 
 /** Ensure the user has a default stack (creatine, multi, omega-3). */
@@ -396,13 +385,8 @@ export async function toggleSupplementTaken(
     },
     { onConflict: "user_id,supplement_id,log_date" },
   );
-  if (error) {
-    throw new Error(
-      `${error.message}. Run supabase/migrations/007_supplements.sql if needed.`,
-    );
-  }
-  revalidatePath("/nutrition");
-  revalidatePath("/");
+  if (error) throw new Error(error.message);
+  // Optimistic clients own the UI; skip revalidate to keep toggles snappy
 }
 
 export async function markAllSupplementsTaken(logDate: string) {
@@ -425,8 +409,6 @@ export async function markAllSupplementsTaken(logDate: string) {
     { onConflict: "user_id,supplement_id,log_date" },
   );
   if (error) throw new Error(error.message);
-  revalidatePath("/nutrition");
-  revalidatePath("/");
 }
 
 export async function signOut() {
@@ -791,8 +773,6 @@ export async function toggleShoppingItem(
     .update({ plan, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("user_id", user.id);
-
-  revalidatePath("/meal-prep");
 }
 
 export async function togglePrepStep(
@@ -820,8 +800,6 @@ export async function togglePrepStep(
     .update({ plan, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("user_id", user.id);
-
-  revalidatePath("/meal-prep");
 }
 
 export async function copyShoppingListText(planId: string): Promise<string> {
@@ -1057,8 +1035,6 @@ export async function toggleGymPlanSession(
     .update({ plan, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("user_id", user.id);
-
-  revalidatePath("/gym");
 }
 
 export async function logGymFromPlan(formData: FormData) {
@@ -1093,5 +1069,4 @@ export async function logGymFromPlan(formData: FormData) {
   }
 
   revalidatePath("/gym");
-  revalidatePath("/");
 }

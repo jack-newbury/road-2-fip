@@ -125,11 +125,13 @@ function DetailPanel({
   skill,
   progress,
   onClose,
+  onStatusChange,
   className = "",
 }: {
   skill: RoadmapSkill;
   progress?: SkillProgress;
   onClose: () => void;
+  onStatusChange: (skillId: string, status: SkillStatus) => void;
   className?: string;
 }) {
   const [pending, start] = useTransition();
@@ -171,12 +173,18 @@ function DetailPanel({
           value={status}
           onChange={(e) => {
             const next = e.target.value as SkillStatus;
+            const prev = status;
+            onStatusChange(skill.id, next);
             start(async () => {
-              await updateSkillStatus(
-                skill.id,
-                next,
-                progress?.notes ?? undefined,
-              );
+              try {
+                await updateSkillStatus(
+                  skill.id,
+                  next,
+                  progress?.notes ?? undefined,
+                );
+              } catch {
+                onStatusChange(skill.id, prev);
+              }
             });
           }}
           className="w-full min-h-11 rounded-md border border-line bg-background px-3 py-2.5 text-base text-ink outline-none ring-court/30 focus:ring-2 sm:min-h-0 sm:py-2 sm:text-sm"
@@ -202,11 +210,43 @@ export function RoadmapBoard({
   activePhase: 1 | 2 | 3;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [localProgress, setLocalProgress] = useState(progress);
+  const progressKey = progress
+    .map((p) => `${p.skill_id}:${p.status}:${p.updated_at}`)
+    .join("|");
+  const [syncedProgressKey, setSyncedProgressKey] = useState(progressKey);
+  if (progressKey !== syncedProgressKey) {
+    setSyncedProgressKey(progressKey);
+    setLocalProgress(progress);
+  }
+
   const progressMap = useMemo(
-    () => new Map(progress.map((p) => [p.skill_id, p])),
-    [progress],
+    () => new Map(localProgress.map((p) => [p.skill_id, p])),
+    [localProgress],
   );
   const selected = skills.find((s) => s.id === selectedId) ?? null;
+
+  function onStatusChange(skillId: string, status: SkillStatus) {
+    setLocalProgress((prev) => {
+      const existing = prev.find((p) => p.skill_id === skillId);
+      if (existing) {
+        return prev.map((p) =>
+          p.skill_id === skillId ? { ...p, status } : p,
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: `local-${skillId}`,
+          user_id: "",
+          skill_id: skillId,
+          status,
+          notes: null,
+          updated_at: new Date().toISOString(),
+        },
+      ];
+    });
+  }
 
   useEffect(() => {
     if (!selected) return;
@@ -244,7 +284,7 @@ export function RoadmapBoard({
           const phaseSkills = skills.filter((s) => s.phase === phase);
           const pct = phaseProgress(
             phaseSkills.map((s) => s.id),
-            progress,
+            localProgress,
           );
           const byCategory = CATEGORY_ORDER.map((cat) => ({
             cat,
@@ -319,6 +359,7 @@ export function RoadmapBoard({
             skill={selected}
             progress={progressMap.get(selected.id)}
             onClose={() => setSelectedId(null)}
+            onStatusChange={onStatusChange}
           />
         ) : (
           <div className="sticky top-4 rounded-xl border border-dashed border-line bg-surface/40 p-5 text-sm text-muted">
@@ -357,6 +398,7 @@ export function RoadmapBoard({
               skill={selected}
               progress={progressMap.get(selected.id)}
               onClose={() => setSelectedId(null)}
+              onStatusChange={onStatusChange}
             />
           </div>
         </div>

@@ -15,7 +15,7 @@ import {
   TextInput,
 } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export function SupplementTracker({
   logDate,
@@ -27,12 +27,47 @@ export function SupplementTracker({
   takenIds: string[];
 }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [savingStack, startStack] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const taken = useMemo(() => new Set(takenIds), [takenIds]);
+  const [taken, setTaken] = useState(() => new Set(takenIds));
+  const takenKey = `${logDate}:${takenIds.slice().sort().join(",")}`;
+  const [syncedTakenKey, setSyncedTakenKey] = useState(takenKey);
+  if (takenKey !== syncedTakenKey) {
+    setSyncedTakenKey(takenKey);
+    setTaken(new Set(takenIds));
+  }
 
   const active = supplements.filter((s) => s.active);
   const done = active.filter((s) => taken.has(s.id)).length;
+
+  function onToggle(id: string, next: boolean) {
+    setError(null);
+    setTaken((prev) => {
+      const copy = new Set(prev);
+      if (next) copy.add(id);
+      else copy.delete(id);
+      return copy;
+    });
+    void toggleSupplementTaken(id, logDate, next).catch((err) => {
+      setTaken((prev) => {
+        const copy = new Set(prev);
+        if (next) copy.delete(id);
+        else copy.add(id);
+        return copy;
+      });
+      setError(err instanceof Error ? err.message : "Could not update");
+    });
+  }
+
+  function onMarkAll() {
+    setError(null);
+    const prev = new Set(taken);
+    setTaken(new Set(active.map((s) => s.id)));
+    void markAllSupplementsTaken(logDate).catch((err) => {
+      setTaken(prev);
+      setError(err instanceof Error ? err.message : "Could not update");
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -42,21 +77,9 @@ export function SupplementTracker({
           active.length ? (
             <button
               type="button"
-              disabled={pending || done === active.length}
+              disabled={done === active.length}
               className="text-xs font-semibold text-court hover:underline disabled:opacity-40"
-              onClick={() => {
-                setError(null);
-                start(async () => {
-                  try {
-                    await markAllSupplementsTaken(logDate);
-                    router.refresh();
-                  } catch (err) {
-                    setError(
-                      err instanceof Error ? err.message : "Could not update",
-                    );
-                  }
-                });
-              }}
+              onClick={onMarkAll}
             >
               Mark all taken
             </button>
@@ -78,24 +101,8 @@ export function SupplementTracker({
                     <input
                       type="checkbox"
                       checked={isTaken}
-                      disabled={pending}
                       className="mt-1 size-4 accent-court"
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setError(null);
-                        start(async () => {
-                          try {
-                            await toggleSupplementTaken(s.id, logDate, next);
-                            router.refresh();
-                          } catch (err) {
-                            setError(
-                              err instanceof Error
-                                ? err.message
-                                : "Could not update",
-                            );
-                          }
-                        });
-                      }}
+                      onChange={(e) => onToggle(s.id, e.target.checked)}
                     />
                     <span>
                       <span
@@ -141,7 +148,7 @@ export function SupplementTracker({
             const form = e.currentTarget;
             const fd = new FormData(form);
             setError(null);
-            start(async () => {
+            startStack(async () => {
               try {
                 await upsertSupplement(fd);
                 form.reset();
@@ -167,8 +174,8 @@ export function SupplementTracker({
             <TextInput name="notes" placeholder="Optional" />
           </Field>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit" disabled={pending}>
-              Add supplement
+            <PrimaryButton type="submit" disabled={savingStack}>
+              {savingStack ? "Adding…" : "Add supplement"}
             </PrimaryButton>
           </div>
         </form>
@@ -189,16 +196,15 @@ export function SupplementTracker({
                 </p>
               </div>
               <form
-                action={deleteSupplement.bind(null, s.id)}
                 onSubmit={(e) => {
                   e.preventDefault();
-                  start(async () => {
+                  startStack(async () => {
                     await deleteSupplement(s.id);
                     router.refresh();
                   });
                 }}
               >
-                <DangerButton type="submit" disabled={pending}>
+                <DangerButton type="submit" disabled={savingStack}>
                   Remove
                 </DangerButton>
               </form>

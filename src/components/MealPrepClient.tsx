@@ -46,24 +46,67 @@ export function MealPrepClient({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [localPlan, setLocalPlan] = useState(plan);
+  const planKey = plan ? `${plan.id}:${plan.updated_at}` : "none";
+  const [syncedPlanKey, setSyncedPlanKey] = useState(planKey);
+  if (planKey !== syncedPlanKey) {
+    setSyncedPlanKey(planKey);
+    setLocalPlan(plan);
+  }
 
   const shoppingProgress = useMemo(() => {
-    const items = plan?.plan.shopping || [];
+    const items = localPlan?.plan.shopping || [];
     if (!items.length) return { done: 0, total: 0 };
     return {
       done: items.filter((i) => i.checked).length,
       total: items.length,
     };
-  }, [plan]);
+  }, [localPlan]);
 
   const prepProgress = useMemo(() => {
-    const items = plan?.plan.prep || [];
+    const items = localPlan?.plan.prep || [];
     if (!items.length) return { done: 0, total: 0 };
     return {
       done: items.filter((i) => i.done).length,
       total: items.length,
     };
-  }, [plan]);
+  }, [localPlan]);
+
+  function onToggleShopping(itemId: string, checked: boolean) {
+    if (!localPlan) return;
+    const prev = localPlan;
+    setLocalPlan({
+      ...prev,
+      plan: {
+        ...prev.plan,
+        shopping: (prev.plan.shopping || []).map((item) =>
+          item.id === itemId ? { ...item, checked } : item,
+        ),
+      },
+    });
+    void toggleShoppingItem(prev.id, itemId, checked).catch(() => {
+      setLocalPlan(prev);
+      setError("Couldn’t update shopping item — try again.");
+    });
+  }
+
+  function onTogglePrep(stepId: string, done: boolean) {
+    if (!localPlan) return;
+    const prev = localPlan;
+    setLocalPlan({
+      ...prev,
+      plan: {
+        ...prev.plan,
+        prep: (prev.plan.prep || []).map((step) =>
+          step.id === stepId ? { ...step, done } : step,
+        ),
+      },
+    });
+    void togglePrepStep(prev.id, stepId, done).catch(() => {
+      setLocalPlan(prev);
+      setError("Couldn’t update prep step — try again.");
+    });
+  }
 
   function onGenerate(formData: FormData) {
     setError(null);
@@ -80,9 +123,9 @@ export function MealPrepClient({
   }
 
   function copyList() {
-    if (!plan?.plan.shopping) return;
+    if (!localPlan?.plan.shopping) return;
     const byAisle = new Map<string, string[]>();
-    for (const item of plan.plan.shopping) {
+    for (const item of localPlan.plan.shopping) {
       if (item.checked) continue;
       const list = byAisle.get(item.aisle) || [];
       list.push(`${item.name} — ${item.qty}`);
@@ -97,6 +140,8 @@ export function MealPrepClient({
       setTimeout(() => setCopied(false), 2000);
     });
   }
+
+  const activePlan = localPlan;
 
   return (
     <div className="space-y-8">
@@ -235,20 +280,22 @@ export function MealPrepClient({
         </form>
       </SectionCard>
 
-      {plan ? (
+      {activePlan ? (
         <>
           <SectionCard title="Week overview">
-            <p className="text-sm leading-relaxed text-ink">{plan.plan.summary}</p>
-            {(plan.plan.order_tips || []).length > 0 ? (
+            <p className="text-sm leading-relaxed text-ink">
+              {activePlan.plan.summary}
+            </p>
+            {(activePlan.plan.order_tips || []).length > 0 ? (
               <ul className="mt-4 space-y-1 text-sm text-muted">
-                {(plan.plan.order_tips || []).map((tip) => (
+                {(activePlan.plan.order_tips || []).map((tip) => (
                   <li key={tip}>· {tip}</li>
                 ))}
               </ul>
             ) : null}
           </SectionCard>
 
-          {(plan.plan.supplements || []).length > 0 ? (
+          {(activePlan.plan.supplements || []).length > 0 ? (
             <SectionCard title="Recommended supplements">
               <p className="mb-4 text-sm text-muted">
                 Timed with this week’s meals. Track daily taken on{" "}
@@ -258,7 +305,7 @@ export function MealPrepClient({
                 .
               </p>
               <ul className="space-y-3">
-                {(plan.plan.supplements || []).map((s) => (
+                {(activePlan.plan.supplements || []).map((s) => (
                   <li
                     key={`${s.name}-${s.timing}`}
                     className="border-b border-line pb-3 last:border-0 last:pb-0"
@@ -295,8 +342,8 @@ export function MealPrepClient({
           >
             <div className="space-y-4">
               {Object.entries(
-                (plan.plan.shopping || []).reduce<
-                  Record<string, typeof plan.plan.shopping>
+                (activePlan.plan.shopping || []).reduce<
+                  Record<string, typeof activePlan.plan.shopping>
                 >((acc, item) => {
                   (acc[item.aisle] ||= []).push(item);
                   return acc;
@@ -314,16 +361,9 @@ export function MealPrepClient({
                             type="checkbox"
                             checked={item.checked}
                             className="mt-1 size-4 accent-court"
-                            onChange={(e) => {
-                              start(async () => {
-                                await toggleShoppingItem(
-                                  plan.id,
-                                  item.id,
-                                  e.target.checked,
-                                );
-                                router.refresh();
-                              });
-                            }}
+                            onChange={(e) =>
+                              onToggleShopping(item.id, e.target.checked)
+                            }
                           />
                           <span
                             className={
@@ -348,19 +388,14 @@ export function MealPrepClient({
             title={`Sunday prep · ${prepProgress.done}/${prepProgress.total}`}
           >
             <ul className="space-y-3">
-              {(plan.plan.prep || []).map((step) => (
+              {(activePlan.plan.prep || []).map((step) => (
                 <li key={step.id}>
                   <label className="flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
                       checked={step.done}
                       className="mt-1 size-4 accent-court"
-                      onChange={(e) => {
-                        start(async () => {
-                          await togglePrepStep(plan.id, step.id, e.target.checked);
-                          router.refresh();
-                        });
-                      }}
+                      onChange={(e) => onTogglePrep(step.id, e.target.checked)}
                     />
                     <span>
                       <span
@@ -380,7 +415,7 @@ export function MealPrepClient({
 
           <SectionCard title="Daily meals">
             <div className="space-y-6">
-              {(plan.plan.days || []).map((day) => (
+              {(activePlan.plan.days || []).map((day) => (
                 <div key={day.date} className="border-b border-line pb-5 last:border-0">
                   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="font-display text-base font-semibold text-charcoal">

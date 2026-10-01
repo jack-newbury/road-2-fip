@@ -3,7 +3,7 @@
 import { updateSkillStatus } from "@/lib/actions";
 import type { RoadmapSkill, SkillProgress, SkillStatus } from "@/lib/types";
 import { STATUS_LABELS } from "@/lib/types";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 const STATUSES: SkillStatus[] = ["todo", "learning", "practiced", "solid"];
 
@@ -15,7 +15,13 @@ export function SkillCard({
   progress?: SkillProgress;
 }) {
   const [pending, start] = useTransition();
-  const status = progress?.status ?? "todo";
+  const serverStatus = progress?.status ?? "todo";
+  const [status, setStatus] = useState<SkillStatus>(serverStatus);
+  const [syncedStatus, setSyncedStatus] = useState(serverStatus);
+  if (serverStatus !== syncedStatus) {
+    setSyncedStatus(serverStatus);
+    setStatus(serverStatus);
+  }
 
   return (
     <article className="border-b border-line py-5 last:border-0">
@@ -41,8 +47,18 @@ export function SkillCard({
           value={status}
           onChange={(e) => {
             const next = e.target.value as SkillStatus;
+            const prev = status;
+            setStatus(next);
             start(async () => {
-              await updateSkillStatus(skill.id, next, progress?.notes ?? undefined);
+              try {
+                await updateSkillStatus(
+                  skill.id,
+                  next,
+                  progress?.notes ?? undefined,
+                );
+              } catch {
+                setStatus(prev);
+              }
             });
           }}
           className={`rounded-md border px-2.5 py-1.5 text-xs font-medium outline-none ${

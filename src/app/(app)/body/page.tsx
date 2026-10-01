@@ -11,12 +11,12 @@ import {
   Field,
   InfoTooltip,
   PageHeader,
-  PrimaryButton,
   SectionCard,
   TextInput,
   TextSelect,
   TextTextarea,
 } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 import { formatDate, todayISO } from "@/lib/utils";
@@ -167,7 +167,7 @@ export default async function BodyPage() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save metrics</PrimaryButton>
+            <SubmitButton>Save metrics</SubmitButton>
           </div>
         </form>
       </SectionCard>
@@ -229,7 +229,7 @@ export default async function BodyPage() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save body settings</PrimaryButton>
+            <SubmitButton>Save body settings</SubmitButton>
           </div>
         </form>
       </SectionCard>

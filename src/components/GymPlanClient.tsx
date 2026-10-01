@@ -28,7 +28,33 @@ export function GymPlanClient({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [logging, setLogging] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [localPlan, setLocalPlan] = useState(plan);
+  const planKey = plan ? `${plan.id}:${plan.updated_at}` : "none";
+  const [syncedPlanKey, setSyncedPlanKey] = useState(planKey);
+  if (planKey !== syncedPlanKey) {
+    setSyncedPlanKey(planKey);
+    setLocalPlan(plan);
+  }
+
+  function onToggleDone(date: string, done: boolean) {
+    if (!localPlan) return;
+    const prev = localPlan;
+    setLocalPlan({
+      ...prev,
+      plan: {
+        ...prev.plan,
+        sessions: prev.plan.sessions.map((s) =>
+          s.date === date ? { ...s, done } : s,
+        ),
+      },
+    });
+    void toggleGymPlanSession(prev.id, date, done).catch(() => {
+      setLocalPlan(prev);
+      setError("Couldn’t update session — try again.");
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -87,14 +113,14 @@ export function GymPlanClient({
         </form>
       </SectionCard>
 
-      {plan ? (
-        <SectionCard title={`Priority · ${plan.plan.priority}`}>
-          <p className="mb-4 text-sm text-ink">{plan.plan.summary}</p>
-          {plan.plan.deload_note ? (
-            <p className="mb-4 text-xs text-clay">{plan.plan.deload_note}</p>
+      {localPlan ? (
+        <SectionCard title={`Priority · ${localPlan.plan.priority}`}>
+          <p className="mb-4 text-sm text-ink">{localPlan.plan.summary}</p>
+          {localPlan.plan.deload_note ? (
+            <p className="mb-4 text-xs text-clay">{localPlan.plan.deload_note}</p>
           ) : null}
           <div className="space-y-6">
-            {plan.plan.sessions.map((session) => (
+            {localPlan.plan.sessions.map((session) => (
               <article
                 key={session.date}
                 className="border-b border-line pb-5 last:border-0"
@@ -115,16 +141,9 @@ export function GymPlanClient({
                       type="checkbox"
                       checked={Boolean(session.done)}
                       className="size-4 accent-court"
-                      onChange={(e) => {
-                        start(async () => {
-                          await toggleGymPlanSession(
-                            plan.id,
-                            session.date,
-                            e.target.checked,
-                          );
-                          router.refresh();
-                        });
-                      }}
+                      onChange={(e) =>
+                        onToggleDone(session.date, e.target.checked)
+                      }
                     />
                     Done
                   </label>
@@ -156,13 +175,14 @@ export function GymPlanClient({
                   onSubmit={(e) => {
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
-                    start(async () => {
-                      await logGymFromPlan(fd);
-                      router.refresh();
-                    });
+                    setLogging(session.date);
+                    onToggleDone(session.date, true);
+                    void logGymFromPlan(fd)
+                      .catch(() => setError("Couldn’t log session — try again."))
+                      .finally(() => setLogging(null));
                   }}
                 >
-                  <input type="hidden" name="plan_id" value={plan.id} />
+                  <input type="hidden" name="plan_id" value={localPlan.id} />
                   <input type="hidden" name="session_date" value={session.date} />
                   <input
                     type="hidden"
@@ -182,9 +202,10 @@ export function GymPlanClient({
                   />
                   <button
                     type="submit"
-                    className="text-xs font-semibold text-court hover:underline"
+                    disabled={logging === session.date}
+                    className="text-xs font-semibold text-court hover:underline disabled:opacity-50"
                   >
-                    Log this session
+                    {logging === session.date ? "Logging…" : "Log this session"}
                   </button>
                 </form>
               </article>

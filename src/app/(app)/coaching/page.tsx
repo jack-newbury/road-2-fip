@@ -6,11 +6,11 @@ import {
   DangerButton,
   Field,
   PageHeader,
-  PrimaryButton,
   SectionCard,
   TextInput,
   TextTextarea,
 } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayISO } from "@/lib/utils";
 import { redirect } from "next/navigation";
@@ -77,7 +77,7 @@ export default async function CoachingPage() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <PrimaryButton type="submit">Save lesson</PrimaryButton>
+            <SubmitButton>Save lesson</SubmitButton>
           </div>
         </form>
       </SectionCard>
