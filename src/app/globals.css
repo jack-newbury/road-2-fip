@@ -101,6 +101,15 @@ h3,
   animation: check-pop 0.35s ease-out;
 }
 
+@keyframes nav-progress {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
 .bg-atmosphere {
   background:
     radial-gradient(ellipse 90% 55% at 8% -15%, rgba(45, 154, 98, 0.22), transparent 55%),

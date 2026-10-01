@@ -29,10 +29,14 @@ function isActive(pathname: string, href: string) {
 export function AppNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
-
-  useEffect(() => {
+  /** Highlight destination immediately on click — before RSC navigation finishes */
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [syncedPath, setSyncedPath] = useState(pathname);
+  if (pathname !== syncedPath) {
+    setSyncedPath(pathname);
+    setPendingHref(null);
     setMoreOpen(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -43,14 +47,31 @@ export function AppNav() {
     };
   }, [moreOpen]);
 
-  const moreActive = !MOBILE_PRIMARY.some((href) => isActive(pathname, href));
+  const viewPath = pendingHref ?? pathname;
+  const navigating = pendingHref != null && pendingHref !== pathname;
+  const moreActive = !MOBILE_PRIMARY.some((href) => isActive(viewPath, href));
+
+  function onNavClick(href: string) {
+    if (!isActive(pathname, href)) setPendingHref(href);
+  }
 
   return (
     <>
+      {navigating ? (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-line/40"
+          aria-hidden
+        >
+          <div className="h-full w-1/3 animate-[nav-progress_1s_ease-in-out_infinite] bg-court" />
+        </div>
+      ) : null}
+
       <aside className="hidden lg:flex lg:w-56 lg:shrink-0 lg:flex-col lg:border-r lg:border-line lg:bg-surface/80 lg:backdrop-blur">
         <div className="px-5 pt-8 pb-6">
           <Link
             href="/"
+            prefetch
+            onClick={() => onNavClick("/")}
             className="font-display text-xl font-bold tracking-tight text-court-deep"
           >
             Road to FIP
@@ -59,11 +80,13 @@ export function AppNav() {
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-8">
           {LINKS.map((link) => {
-            const active = isActive(pathname, link.href);
+            const active = isActive(viewPath, link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch
+                onClick={() => onNavClick(link.href)}
                 className={`rounded-md px-3 py-2.5 text-sm transition ${
                   active
                     ? "bg-court text-white"
@@ -77,7 +100,6 @@ export function AppNav() {
         </nav>
       </aside>
 
-      {/* Mobile more sheet */}
       {moreOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal>
           <button
@@ -101,11 +123,16 @@ export function AppNav() {
             </div>
             <nav className="grid grid-cols-2 gap-2 p-4">
               {LINKS.map((link) => {
-                const active = isActive(pathname, link.href);
+                const active = isActive(viewPath, link.href);
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    prefetch
+                    onClick={() => {
+                      onNavClick(link.href);
+                      setMoreOpen(false);
+                    }}
                     className={`rounded-xl border px-3 py-3 text-sm font-medium transition ${
                       active
                         ? "border-court bg-court text-white"
@@ -121,7 +148,6 @@ export function AppNav() {
         </div>
       ) : null}
 
-      {/* Mobile bottom bar */}
       <nav
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -130,11 +156,13 @@ export function AppNav() {
           {LINKS.filter((l) =>
             (MOBILE_PRIMARY as readonly string[]).includes(l.href),
           ).map((link) => {
-            const active = isActive(pathname, link.href);
+            const active = isActive(viewPath, link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch
+                onClick={() => onNavClick(link.href)}
                 className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-md px-1 py-1.5 text-center text-[10px] font-medium ${
                   active ? "bg-court text-white" : "text-muted"
                 }`}
@@ -147,9 +175,7 @@ export function AppNav() {
             type="button"
             onClick={() => setMoreOpen(true)}
             className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-md px-1 py-1.5 text-center text-[10px] font-medium ${
-              moreOpen || moreActive
-                ? "bg-court text-white"
-                : "text-muted"
+              moreOpen || moreActive ? "bg-court text-white" : "text-muted"
             }`}
             aria-expanded={moreOpen}
             aria-haspopup="dialog"
